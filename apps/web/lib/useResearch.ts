@@ -4,7 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { makePlan, streamResearch } from "./api";
 import type { SearchItem, ServerEvent, SourceRef } from "./types";
 
-export type Phase = "ask" | "drafting" | "plan" | "research" | "report" | "error";
+export type Phase = "ask" | "drafting" | "reply" | "plan" | "research" | "report" | "error";
 
 export interface AgentState {
   query: string;
@@ -87,6 +87,7 @@ export function useResearch() {
   const [error, setError] = useState("");
   const [topic, setTopic] = useState("");
   const [plan, setPlan] = useState<string[]>([]);
+  const [reply, setReply] = useState("");
   const [approved, setApproved] = useState(false);
   const [run, setRun] = useState<RunState | null>(null);
   const [report, setReport] = useState("");
@@ -115,6 +116,7 @@ export function useResearch() {
       clearTimer();
       setTopic(t);
       setPlan([]);
+      setReply("");
       setApproved(false);
       setRun(null);
       setReport("");
@@ -125,6 +127,11 @@ export function useResearch() {
       setPhase("drafting");
       try {
         const res = await makePlan(t);
+        if (res.steps.length === 0) {
+          setReply(res.reply);
+          setPhase("reply");
+          return;
+        }
         setPlan(res.steps);
         setPhase("plan");
       } catch (e) {
@@ -234,6 +241,7 @@ export function useResearch() {
     error,
     topic,
     plan,
+    reply,
     approved,
     run,
     report,

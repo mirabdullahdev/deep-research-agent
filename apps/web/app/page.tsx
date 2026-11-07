@@ -63,6 +63,12 @@ export default function Home() {
               <div className="mt-8 space-y-6">
                 {r.phase === "drafting" && <Pulse label="Drafting a research plan" />}
 
+                {r.phase === "reply" && (
+                  <p className="max-w-[85%] rounded-[4px] border border-ink/10 bg-paper/70 px-5 py-3 text-[16.5px] leading-relaxed backdrop-blur-md">
+                    {r.reply}
+                  </p>
+                )}
+
                 {r.plan.length > 0 && (
                   <PlanCard initial={r.plan} locked={r.approved} onApprove={r.approve} />
                 )}
@@ -106,7 +112,7 @@ export default function Home() {
           )}
         </AnimatePresence>
 
-        {inThread && (running || r.phase === "report" || r.phase === "error") && (
+        {inThread && (running || ["report", "error", "reply"].includes(r.phase)) && (
           <Dock running={running} onStop={r.stop} onSubmit={r.submit} />
         )}
       </div>

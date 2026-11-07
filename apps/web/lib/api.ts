@@ -28,7 +28,7 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   return res.json();
 }
 
-export const makePlan = (topic: string) => post<{ steps: string[] }>("/api/plan", { topic });
+export const makePlan = (topic: string) => post<{ steps: string[]; reply: string }>("/api/plan", { topic });
 
 export interface RunRequest {
   topic: string;

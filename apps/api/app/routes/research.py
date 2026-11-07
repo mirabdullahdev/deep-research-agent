@@ -23,6 +23,7 @@ class PlanIn(BaseModel):
 
 class PlanOut(BaseModel):
     steps: list[str]
+    reply: str = ""
 
 
 class RunIn(PlanIn):
@@ -47,7 +48,8 @@ async def plan(
     guard: Annotated[Guard, Depends(get_guard)],
 ):
     await guard(req.topic)
-    return PlanOut(steps=await intake.make_plan(settings, req.topic))
+    steps, reply = await intake.make_plan(settings, req.topic)
+    return PlanOut(steps=steps, reply=reply)
 
 
 @router.post("/research")

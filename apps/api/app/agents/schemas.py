@@ -11,6 +11,8 @@ class Plan(BaseModel):
 
 
 class Outline(BaseModel):
+    research: bool
+    reply: str
     steps: list[str]
 
 

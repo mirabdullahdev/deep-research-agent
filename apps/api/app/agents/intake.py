@@ -5,14 +5,17 @@ from app.agents.schemas import Outline
 from app.config import Settings
 
 PLAN_STEPS = 5
+FALLBACK_REPLY = "I research topics and questions on the web. What would you like to look into?"
 
 
-async def make_plan(settings: Settings, topic: str) -> list[str]:
+async def make_plan(settings: Settings, topic: str) -> tuple[list[str], str]:
     llm = OpenAILLM(settings.worker_model, settings.openai_api_key, Budget(cap_usd=0.01), "low")
     result = await llm.structured(
-        Outline, prompts.OUTLINE.format(n=PLAN_STEPS), f"Topic: {topic}"
+        Outline, prompts.OUTLINE.format(n=PLAN_STEPS), f"Message: {topic}"
     )
+    if not result.research:
+        return [], result.reply.strip() or FALLBACK_REPLY
     steps = [s.strip() for s in result.steps if s.strip()]
     if not steps:
-        raise ValueError("The planner returned no steps.")
-    return steps[:PLAN_STEPS]
+        return [], FALLBACK_REPLY
+    return steps[:PLAN_STEPS], ""
