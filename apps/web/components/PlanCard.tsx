@@ -55,7 +55,7 @@ export function PlanCard({
           <ol className="space-y-3">
             {rows.map((r, i) => (
               <li key={r.id} className="flex items-start gap-3">
-                <span className="mt-[3px] w-5 shrink-0 font-mono text-[12px] text-slate">
+                <span className="w-6 shrink-0 font-display text-base leading-relaxed text-slate">
                   {i + 1}.
                 </span>
                 {edit ? (
@@ -69,7 +69,7 @@ export function PlanCard({
                       maxLength={200}
                       onChange={(e) => update(r.id, e.target.value)}
                       placeholder="Describe a step"
-                      className="min-w-0 flex-1 border-0 border-b border-ink/20 bg-transparent pb-1 text-base outline-none transition-colors focus:border-ink"
+                      className="min-w-0 flex-1 border-0 border-b border-ink/20 bg-transparent pb-1 font-display text-base font-normal leading-relaxed outline-none transition-colors focus:border-ink"
                     />
                     <button
                       type="button"
@@ -83,7 +83,7 @@ export function PlanCard({
                     </button>
                   </>
                 ) : (
-                  <p className="text-base leading-relaxed">{r.text}</p>
+                  <p className="font-display text-base font-normal leading-relaxed">{r.text}</p>
                 )}
               </li>
             ))}

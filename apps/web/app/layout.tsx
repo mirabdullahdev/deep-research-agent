@@ -5,7 +5,7 @@ import "./globals.css";
 const display = Poppins({
   variable: "--f-display",
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
+  weight: ["400", "500", "600", "700"],
 });
 
 const body = Inter({
