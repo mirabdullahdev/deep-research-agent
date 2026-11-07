@@ -38,16 +38,16 @@ export function PromptStep({
             rows={3}
             onChange={(e) => setTopic(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submit();
+              if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                e.preventDefault();
+                submit();
+              }
             }}
             placeholder="What do you want to understand?"
             className="w-full resize-none rounded-[3px] bg-transparent px-4 pt-3.5 text-lg leading-relaxed outline-none placeholder:text-slate/60"
           />
-          <div className="flex items-center justify-between px-4 pb-2.5 pt-1">
+          <div className="px-4 pb-2.5 pt-1">
             <span className="font-mono text-[11px] text-slate/70">{topic.length}/300</span>
-            <span className="hidden font-mono text-[11px] text-slate/70 sm:inline">
-              Ctrl + Enter to continue
-            </span>
           </div>
         </div>
 
