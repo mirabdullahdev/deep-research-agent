@@ -221,3 +221,20 @@ def test_lists_tables_and_paragraphs_are_not_turned_into_headings():
 def test_a_first_line_that_is_a_sentence_is_not_made_a_title():
     raw = "The answer is short and direct.\n\nMore text follows here."
     assert ensure_headings(raw) == raw
+
+
+async def test_each_gap_round_is_limited_to_the_configured_number_of_searches():
+    search = FakeSearch()
+    too_many = [[f"gap query {n}" for n in range(12)]]
+    events = await collect("X", FakeLLM(gaps=too_many), search)
+
+    gap_event = next(e for e in events if e["type"] == "gaps")
+    assert len(gap_event["searches"]) == DEEP.followups_per_round
+    assert sum(q.startswith("gap query") for q in search.queries) == DEEP.followups_per_round
+
+
+def test_deep_research_is_configured_for_depth():
+    assert DEEP.questions >= 10
+    assert DEEP.reflection_rounds >= 6
+    assert DEEP.results_per_question >= 8
+    assert DEEP.budget_usd <= 0.60

@@ -6,14 +6,16 @@ class DepthConfig:
     questions: int
     results_per_question: int
     reflection_rounds: int
+    followups_per_round: int
     budget_usd: float
     report_words: int
 
 
 DEEP = DepthConfig(
-    questions=8,
-    results_per_question=6,
-    reflection_rounds=3,
+    questions=10,
+    results_per_question=8,
+    reflection_rounds=6,
+    followups_per_round=5,
     budget_usd=0.50,
-    report_words=2200,
+    report_words=3000,
 )

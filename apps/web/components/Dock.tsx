@@ -24,7 +24,7 @@ export function Dock({
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-20 px-6 pb-6 pt-12">
       <div className="pointer-events-auto mx-auto max-w-3xl">
         {running ? (
-          <div className="flex items-center justify-between gap-4 rounded-[4px] border border-ink/15 bg-paper-deep/90 backdrop-blur-md px-5 py-2.5">
+          <div className="flex items-center justify-between gap-4 rounded-[4px] border border-ink/15 bg-paper-deep px-5 py-2.5">
             <span className="text-sm text-slate">Researching. You can stop at any time.</span>
             <button
               type="button"
@@ -40,7 +40,7 @@ export function Dock({
               e.preventDefault();
               send();
             }}
-            className="flex items-center gap-3 rounded-[4px] border border-ink/15 bg-paper-deep/90 backdrop-blur-md py-1.5 pl-5 pr-1.5 transition-colors focus-within:border-ink/40"
+            className="flex items-center gap-3 rounded-[4px] border border-ink/15 bg-paper-deep py-1.5 pl-5 pr-1.5 transition-colors focus-within:border-ink/40"
           >
             <label htmlFor="dock" className="sr-only">
               Research something else

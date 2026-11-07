@@ -59,7 +59,7 @@ export default function Home() {
               className="relative z-10 mx-auto max-w-3xl px-6 pb-40 pt-10"
             >
               <div className="flex justify-end">
-                <p className="max-w-[85%] whitespace-pre-wrap break-words rounded-[4px] bg-paper/70 backdrop-blur-md px-5 py-3 text-[16.5px] leading-relaxed">
+                <p className="max-w-[85%] whitespace-pre-wrap break-words rounded-[4px] bg-paper/70 px-5 py-3 text-[16.5px] leading-relaxed">
                   {r.topic}
                 </p>
               </div>
@@ -68,7 +68,7 @@ export default function Home() {
                 {r.phase === "drafting" && <Pulse label="Drafting a research plan" />}
 
                 {r.phase === "reply" && (
-                  <p className="max-w-[85%] rounded-[4px] border border-ink/10 bg-paper/70 px-5 py-3 text-[16.5px] leading-relaxed backdrop-blur-md">
+                  <p className="max-w-[85%] rounded-[4px] border border-ink/10 bg-paper/70 px-5 py-3 text-[16.5px] leading-relaxed">
                     {r.reply}
                   </p>
                 )}
@@ -100,7 +100,7 @@ export default function Home() {
                 {r.phase === "error" && r.errorCode && (
                   <div
                     role="status"
-                    className="rounded-[4px] border border-ink/15 bg-paper/70 p-5 backdrop-blur-md"
+                    className="rounded-[4px] border border-ink/15 bg-paper/70 p-5"
                   >
                     <p className="font-display text-lg font-semibold">
                       {r.errorCode === "used" ? "Testing complete" : "Demo unavailable"}

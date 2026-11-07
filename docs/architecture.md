@@ -19,7 +19,7 @@ Nothing else is exposed: the interactive docs and schema endpoints are disabled.
 ## Agent graph
 
 ```
-plan -> research (parallel, up to 8 at once) -> reflect -> (gaps? loop, max 3 rounds) -> write
+plan -> research (parallel, up to 8 at once) -> reflect -> (gaps? loop, max 6 rounds) -> write
 ```
 
 | Node | Job | Model |
@@ -31,6 +31,8 @@ plan -> research (parallel, up to 8 at once) -> reflect -> (gaps? loop, max 3 ro
 | Write | Produce the formal report from the extracted facts | large |
 
 Extracted claims are only kept if their URL was one of the sources actually returned, which blocks invented citations. The report carries no inline citation markers; a reference list of all sources is appended instead, and the writer names key sources in the prose.
+
+Deep research settings live in `apps/api/app/agents/depth.py`: 10 opening searches with 8 sources each, up to 6 gap-filling rounds of up to 5 searches, sources read up to 5,000 characters, and a report of about 3,000 words. A run stops starting new work once its spend cap is reached, and the report is always written.
 
 ## Streaming events
 
@@ -52,7 +54,7 @@ Refusal messages are deliberately neutral and do not reveal the limits.
 
 ## Cost model
 
-Token counts come from the API responses. Cost is those counts multiplied by the price table in `apps/api/app/agents/budget.py`, with cached input billed at the cached rate. One measured deep run: about $0.11 for a 17-search run, of which roughly 60% was the single report-writing call.
+Token counts come from the API responses. Cost is those counts multiplied by the price table in `apps/api/app/agents/budget.py`, with cached input billed at the cached rate. Measured at the earlier, smaller setting (17 searches, about two minutes): about $0.11 per run, roughly 60% of it the single report-writing call. The current deeper setting runs more searches and a longer report, so expect a higher cost and a longer run; check `apps/api/logs/usage.jsonl` after a run for the real figures.
 
 ## Frontend notes
 

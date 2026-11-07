@@ -108,11 +108,11 @@ async def reflect(state: State, config: RunnableConfig) -> dict:
     asked = "\n".join(f"- {q}" for q in state["asked"])
     result = await deps.worker.structured(
         Gaps,
-        prompts.REFLECTOR.format(n=3),
+        prompts.REFLECTOR.format(n=deps.depth.followups_per_round),
         f"Topic: {state['topic']}\n\nAlready run:\n{asked}\n\nFindings so far:\n{notes}",
     )
     fresh = [s for s in result.follow_ups if s.query.strip() and s.query not in state["asked"]]
-    follow_ups = fresh[:3]
+    follow_ups = fresh[: deps.depth.followups_per_round]
     deps.emit({"type": "gaps", "searches": [s.model_dump() for s in follow_ups]})
     deps.emit(_usage(deps))
     return {"searches": follow_ups, "round": round_no}

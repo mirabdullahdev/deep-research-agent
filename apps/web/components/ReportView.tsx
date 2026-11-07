@@ -1,7 +1,7 @@
 "use client";
 
 import { m } from "framer-motion";
-import { useState } from "react";
+import { memo, useState } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { SourceRef } from "@/lib/types";
@@ -104,6 +104,29 @@ function forDisplay(md: string, streaming: boolean) {
   return blocks.join("\n\n");
 }
 
+const startsList = (block: string) => /^\s*(?:[-*]|\d+\.)\s/.test(block);
+
+function toBlocks(md: string) {
+  const blocks: string[] = [];
+  for (const block of md.split(/\n{2,}/)) {
+    const last = blocks.length - 1;
+    if (last >= 0 && startsList(block) && startsList(blocks[last])) {
+      blocks[last] = `${blocks[last]}\n\n${block}`;
+    } else {
+      blocks.push(block);
+    }
+  }
+  return blocks;
+}
+
+const Block = memo(function Block({ md }: { md: string }) {
+  return (
+    <ReactMarkdown remarkPlugins={plugins} components={components}>
+      {md}
+    </ReactMarkdown>
+  );
+});
+
 const isWebLink = (url: string) => /^https?:\/\//i.test(url);
 
 function toMarkdown(report: string, sources: SourceRef[]) {
@@ -157,9 +180,9 @@ export function ReportView({
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
       className="rounded-[4px] bg-paper px-5 py-8 text-ink shadow-[0_30px_70px_-35px_rgba(0,0,0,0.85)] sheet sm:px-10 sm:py-12"
     >
-      <ReactMarkdown remarkPlugins={plugins} components={components}>
-        {forDisplay(report, streaming)}
-      </ReactMarkdown>
+      {toBlocks(forDisplay(report, streaming)).map((block, i) => (
+        <Block key={i} md={block} />
+      ))}
       {streaming && <span className="cursor" aria-hidden />}
       {stopped && (
         <p className="mt-4 font-mono text-[12px] text-slate">

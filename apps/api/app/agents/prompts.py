@@ -57,7 +57,7 @@ WRITER = (
     "- Target about {words} words.\n"
     "- Write Markdown with literal heading markers. The first line is '# ' followed by a "
     "specific, professional title. Then '## Executive Summary' followed by one paragraph "
-    "(4 to 6 sentences) that states the answer first. Then 4 to 7 thematic sections, each "
+    "(4 to 6 sentences) that states the answer first. Then 5 to 8 thematic sections, each "
     "starting with a line that begins '## '. Then '## Conclusion' and a short "
     "'## Limitations'. Leave a blank line after every heading and between paragraphs. Never "
     "write a heading as plain text.\n"

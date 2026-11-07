@@ -3,7 +3,7 @@ from typing import Protocol
 from pydantic import BaseModel
 from tavily import AsyncTavilyClient
 
-MAX_CHARS_PER_SOURCE = 3500
+MAX_CHARS_PER_SOURCE = 5000
 
 
 class Source(BaseModel):

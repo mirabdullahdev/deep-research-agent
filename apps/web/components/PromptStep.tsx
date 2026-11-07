@@ -27,7 +27,7 @@ export function PromptStep({
           submit();
         }}
       >
-        <div className="rounded-[4px] border border-ink/15 bg-paper/60 p-1.5 backdrop-blur-md shadow-[0_18px_40px_-24px_rgba(0,0,0,0.6)] transition-colors focus-within:border-ink/40">
+        <div className="rounded-[4px] border border-ink/15 bg-paper/60 p-1.5 shadow-[0_18px_40px_-24px_rgba(0,0,0,0.6)] transition-colors focus-within:border-ink/40">
           <label htmlFor="topic" className="sr-only">
             Research topic
           </label>

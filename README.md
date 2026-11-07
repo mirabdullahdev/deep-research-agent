@@ -8,7 +8,7 @@ Built as a portfolio project with a hard cost ceiling: a full research run uses 
 
 1. **Ask.** Enter a topic. Greetings and small talk get a short reply instead of a plan.
 2. **Plan.** The agent drafts five plain-language steps. Approve them as written or edit, remove and add steps first.
-3. **Research.** Search agents work in parallel, read the sources, extract cited facts, and run up to three gap-filling rounds.
+3. **Research.** Search agents work in parallel, read the sources, extract cited facts, and run up to six gap-filling rounds.
 4. **Report.** A writer produces a titled report (summary, themed sections, conclusion, limitations) that streams onto the page, followed by a reference list.
 
 ## Stack
