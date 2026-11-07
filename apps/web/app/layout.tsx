@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
-import { Bricolage_Grotesque, IBM_Plex_Mono, Instrument_Sans } from "next/font/google";
+import { IBM_Plex_Mono, Inter, Poppins } from "next/font/google";
 import "./globals.css";
 
-const display = Bricolage_Grotesque({
+const display = Poppins({
   variable: "--f-display",
   subsets: ["latin"],
-  axes: ["opsz"],
+  weight: ["500", "600", "700"],
 });
 
-const body = Instrument_Sans({
+const body = Inter({
   variable: "--f-body",
   subsets: ["latin"],
 });
@@ -20,7 +20,7 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Fathom: deep research, charted",
+  title: "Deep Research Agent",
   description:
     "A team of AI agents plans the research with you, reads the web in parallel, and writes a report where every claim links to its source.",
 };

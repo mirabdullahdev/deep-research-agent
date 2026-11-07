@@ -38,25 +38,18 @@ export function PromptStep({
 
   return (
     <section>
-      <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-kelp">
-        Multi-agent research
-      </p>
-      <h1 className="mt-4 max-w-[16ch] font-display text-5xl font-semibold leading-[0.98] tracking-tight sm:text-7xl">
-        Ask something worth digging into.
+      <h1 className="gradient-text text-balance text-center font-display text-5xl pb-[0.25em] font-semibold leading-[1.25] tracking-tight sm:text-6xl">
+        Deep Research Agent
       </h1>
-      <p className="mt-6 max-w-xl text-lg leading-relaxed text-slate">
-        Fathom agrees a plan with you, sends agents to read the web in parallel, and returns a
-        report where every claim links to its source.
-      </p>
 
       <form
-        className="mt-10"
+        className="mt-12"
         onSubmit={(e) => {
           e.preventDefault();
           submit();
         }}
       >
-        <div className="rounded-2xl border border-ink/15 bg-white/70 p-1.5 shadow-[0_1px_0_rgba(14,34,54,0.04),0_18px_40px_-24px_rgba(14,34,54,0.35)] transition-shadow focus-within:border-ink/40">
+        <div className="rounded-2xl border border-ink/15 bg-white/[0.04] p-1.5 shadow-[0_18px_40px_-24px_rgba(0,0,0,0.6)] transition-colors focus-within:border-ink/40">
           <label htmlFor="topic" className="sr-only">
             Research topic
           </label>
@@ -81,10 +74,8 @@ export function PromptStep({
         </div>
 
         <fieldset className="mt-6">
-          <legend className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate">
-            Depth
-          </legend>
-          <div className="mt-3 grid gap-3 sm:grid-cols-3">
+          <legend className="sr-only">Depth</legend>
+          <div className="grid gap-3 sm:grid-cols-3">
             {(Object.keys(DEPTHS) as Depth[]).map((key, i) => {
               const d = DEPTHS[key];
               const selected = depth === key;
@@ -94,7 +85,7 @@ export function PromptStep({
                   className={`group cursor-pointer rounded-xl border p-4 transition-all duration-300 ${
                     selected
                       ? "border-ink bg-ink text-paper"
-                      : "border-ink/15 bg-white/50 hover:border-ink/40"
+                      : "border-ink/15 bg-white/[0.03] hover:border-ink/40"
                   }`}
                 >
                   <input
@@ -138,8 +129,7 @@ export function PromptStep({
       </form>
 
       <div className="mt-12">
-        <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate">Try one</p>
-        <ul className="mt-3 space-y-1.5">
+        <ul className="space-y-1.5">
           {EXAMPLES.map((ex) => (
             <li key={ex}>
               <button

@@ -1,14 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --paper: #eef1f2;
-  --paper-deep: #e3e9ec;
-  --ink: #0e2236;
-  --abyss: #07131f;
+  color-scheme: dark;
+  --paper: #0a0f17;
+  --paper-deep: #121923;
+  --ink: #e6edf3;
+  --abyss: #060b12;
   --buoy: #ff5b2e;
-  --kelp: #2f7f86;
-  --mist: #c9d4da;
-  --slate: #5b6b79;
+  --kelp: #3a9aa3;
+  --mist: #1f2a37;
+  --slate: #8796a5;
 }
 
 @theme inline {
@@ -47,6 +48,33 @@ body {
   border-radius: 4px;
 }
 
+@keyframes sheen {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 100% 50%;
+  }
+}
+
+.gradient-text {
+  background-image: linear-gradient(
+    90deg,
+    #f4f6f8 0%,
+    #f4f6f8 38%,
+    #ff9468 46%,
+    #ff5b2e 50%,
+    #ff9468 54%,
+    #f4f6f8 62%,
+    #f4f6f8 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: sheen 5s ease-in-out infinite alternate;
+}
+
 @keyframes blink {
   50% {
     opacity: 0;
@@ -72,7 +100,8 @@ body {
   html {
     scroll-behavior: auto;
   }
-  .cursor {
+  .cursor,
+  .gradient-text {
     animation: none;
   }
 }

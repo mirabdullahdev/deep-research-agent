@@ -2,35 +2,35 @@
 
 import { AnimatePresence, MotionConfig, motion } from "framer-motion";
 import { useEffect } from "react";
-import { ClarifyStep } from "@/components/ClarifyStep";
+import { ActivityCard } from "@/components/ActivityCard";
 import { Contours } from "@/components/Contours";
-import { PlanStep } from "@/components/PlanStep";
+import { Dock } from "@/components/Dock";
+import { PlanCard } from "@/components/PlanCard";
 import { PromptStep } from "@/components/PromptStep";
-import { Rail } from "@/components/Rail";
 import { ReportView } from "@/components/ReportView";
-import { ResearchStage } from "@/components/ResearchStage";
 import { useResearch } from "@/lib/useResearch";
 
-function Loading({ label }: { label: string }) {
+function Pulse({ label }: { label: string }) {
   return (
-    <div role="status" className="flex min-h-[40vh] flex-col justify-center">
-      <div className="flex items-center gap-4">
-        <span className="relative flex h-3 w-3">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-buoy opacity-60" />
-          <span className="relative inline-flex h-3 w-3 rounded-full bg-buoy" />
-        </span>
-        <p className="font-display text-2xl font-medium">{label}</p>
-      </div>
+    <div role="status" className="flex items-center gap-3 py-2">
+      <span className="relative flex h-2.5 w-2.5">
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-buoy opacity-60" />
+        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-buoy" />
+      </span>
+      <p className="font-display text-lg font-medium">{label}</p>
     </div>
   );
 }
 
 export default function Home() {
   const r = useResearch();
-  const wide = r.phase === "research" || r.phase === "report";
+  const inThread = r.phase !== "ask";
+  const finished = r.outcome !== null;
+  const running = r.phase === "research" || (r.phase === "report" && !finished && !r.stopped);
+  const streaming = r.phase === "report" && !finished && !r.stopped;
 
   useEffect(() => {
-    if (r.phase !== "report") window.scrollTo({ top: 0 });
+    if (r.phase === "ask") window.scrollTo({ top: 0 });
   }, [r.phase]);
 
   return (
@@ -38,85 +38,84 @@ export default function Home() {
       <div className="relative min-h-screen overflow-x-clip">
         <Contours className="absolute -right-48 -top-40 w-[1100px] text-kelp/25 sm:-right-24" />
 
-        <header className="relative z-10 mx-auto flex max-w-6xl items-center justify-between px-6 pt-7">
-          <button
-            onClick={r.reset}
-            className="font-display text-2xl font-semibold tracking-tight"
-            aria-label="Fathom, start over"
-          >
-            Fathom<span className="text-buoy">.</span>
-          </button>
-          <span className="hidden font-mono text-[11px] uppercase tracking-[0.18em] text-slate sm:block">
-            Deep research, charted
-          </span>
-        </header>
+        <AnimatePresence mode="wait">
+          {!inThread ? (
+            <motion.main
+              key="landing"
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.25 }}
+              className="relative z-10 mx-auto max-w-2xl px-6 pb-24 pt-14 lg:pt-24"
+            >
+              <PromptStep initial={r.topic} onSubmit={r.submit} />
+            </motion.main>
+          ) : (
+            <motion.main
+              key="thread"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              className="relative z-10 mx-auto max-w-3xl px-6 pb-40 pt-10"
+            >
+              <div className="flex justify-end">
+                <p className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl bg-white/[0.07] px-5 py-3 text-[16.5px] leading-relaxed">
+                  {r.topic}
+                </p>
+              </div>
 
-        <div className="relative z-10 mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-8 px-6 pb-24 pt-10 lg:grid-cols-[9rem_minmax(0,1fr)] lg:gap-12 lg:pt-16">
-          <div className="min-w-0 overflow-x-auto [scrollbar-width:none] lg:overflow-visible lg:pt-3">
-            <Rail phase={r.phase} loading={r.phase === "loading"} />
-          </div>
+              <div className="mt-8 space-y-6">
+                {r.phase === "drafting" && <Pulse label="Drafting a research plan" />}
 
-          <main className={wide ? "min-w-0" : "min-w-0 max-w-2xl"}>
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={r.phase === "report" ? "report" : r.phase}
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-              >
-                {r.phase === "ask" && <PromptStep initial={r.topic} onSubmit={r.submit} />}
-                {r.phase === "loading" && <Loading label={r.loadingLabel} />}
-                {r.phase === "clarify" && (
-                  <ClarifyStep topic={r.topic} questions={r.questions} onSubmit={r.answer} />
-                )}
-                {r.phase === "plan" && (
-                  <PlanStep
+                {r.plan.length > 0 && (
+                  <PlanCard
                     depth={r.depth}
                     initial={r.plan}
+                    locked={r.approved}
                     onApprove={r.approve}
-                    onRestart={r.reset}
                   />
                 )}
-                {r.phase === "research" && r.run && (
-                  <ResearchStage run={r.run} topic={r.topic} />
+
+                {r.run && r.approved && (
+                  <ActivityCard
+                    run={r.run}
+                    running={running}
+                    reportStarted={r.phase === "report"}
+                    stopped={r.stopped}
+                    outcome={r.outcome}
+                  />
                 )}
-                {r.phase === "report" && (
+
+                {r.report && (
                   <ReportView
                     topic={r.topic}
-                    depth={r.depth}
                     report={r.report}
                     sources={r.sources}
                     followUps={r.followUps}
-                    outcome={r.outcome}
+                    streaming={streaming}
+                    stopped={r.stopped}
                     onFollowUp={(q) => r.submit(q, r.depth)}
-                    onReset={r.reset}
                   />
                 )}
+
                 {r.phase === "error" && (
-                  <div role="alert" className="max-w-xl">
-                    <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-buoy">
-                      Something stopped the run
-                    </p>
-                    <p className="mt-3 font-display text-3xl font-semibold leading-tight">
-                      {r.error}
-                    </p>
+                  <div role="alert" className="rounded-2xl border border-buoy/40 bg-buoy/[0.07] p-5">
+                    <p className="font-display text-lg font-semibold">The run stopped</p>
+                    <p className="mt-1 text-slate">{r.error}</p>
                     <button
-                      onClick={r.reset}
-                      className="mt-8 rounded-full bg-ink px-6 py-3 text-paper transition-colors hover:bg-buoy"
+                      onClick={r.retry}
+                      className="mt-4 rounded-full bg-ink px-5 py-2 text-sm text-paper transition-colors hover:bg-buoy hover:text-white"
                     >
-                      Start over
+                      Try again
                     </button>
                   </div>
                 )}
-              </motion.div>
-            </AnimatePresence>
-          </main>
-        </div>
+              </div>
+            </motion.main>
+          )}
+        </AnimatePresence>
 
-        <footer className="relative z-10 mx-auto max-w-6xl px-6 pb-10 font-mono text-[11px] text-slate/80">
-          Reports can contain mistakes. Check the cited sources before relying on them.
-        </footer>
+        {inThread && (
+          <Dock running={running} onStop={r.stop} onSubmit={(t) => r.submit(t, r.depth)} />
+        )}
       </div>
     </MotionConfig>
   );

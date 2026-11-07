@@ -1,17 +1,10 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { clarify, makePlan, streamResearch } from "./api";
-import type {
-  Answer,
-  ClarifyQuestion,
-  Depth,
-  SearchItem,
-  ServerEvent,
-  SourceRef,
-} from "./types";
+import { makePlan, streamResearch } from "./api";
+import type { Depth, SearchItem, ServerEvent, SourceRef } from "./types";
 
-export type Phase = "ask" | "loading" | "clarify" | "plan" | "research" | "report" | "error";
+export type Phase = "ask" | "drafting" | "plan" | "research" | "report" | "error";
 
 export interface AgentState {
   query: string;
@@ -55,9 +48,7 @@ function reduceRun(run: RunState, ev: ServerEvent): RunState {
       const known = run.agents.some((a) => a.query === ev.question);
       const agents = known
         ? run.agents.map((a) =>
-            a.query === ev.question
-              ? { ...a, status, findings: ev.findings ?? a.findings }
-              : a,
+            a.query === ev.question ? { ...a, status, findings: ev.findings ?? a.findings } : a,
           )
         : [
             ...run.agents,
@@ -91,18 +82,17 @@ function reduceRun(run: RunState, ev: ServerEvent): RunState {
 
 export function useResearch() {
   const [phase, setPhase] = useState<Phase>("ask");
-  const [loadingLabel, setLoadingLabel] = useState("");
   const [error, setError] = useState("");
   const [topic, setTopic] = useState("");
   const [depth, setDepth] = useState<Depth>("standard");
-  const [questions, setQuestions] = useState<ClarifyQuestion[]>([]);
-  const [answers, setAnswers] = useState<Answer[]>([]);
   const [plan, setPlan] = useState<SearchItem[]>([]);
+  const [approved, setApproved] = useState(false);
   const [run, setRun] = useState<RunState | null>(null);
   const [report, setReport] = useState("");
   const [sources, setSources] = useState<SourceRef[]>([]);
   const [followUps, setFollowUps] = useState<string[]>([]);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
+  const [stopped, setStopped] = useState(false);
 
   const abort = useRef<AbortController | null>(null);
   const buffer = useRef("");
@@ -113,12 +103,28 @@ export function useResearch() {
     setPhase("error");
   }, []);
 
-  const draftPlan = useCallback(
-    async (t: string, a: Answer[], d: Depth) => {
-      setLoadingLabel("Drafting a research plan");
-      setPhase("loading");
+  const clearTimer = () => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+  };
+
+  const submit = useCallback(
+    async (t: string, d: Depth) => {
+      abort.current?.abort();
+      clearTimer();
+      setTopic(t);
+      setDepth(d);
+      setPlan([]);
+      setApproved(false);
+      setRun(null);
+      setReport("");
+      setSources([]);
+      setFollowUps([]);
+      setOutcome(null);
+      setStopped(false);
+      setPhase("drafting");
       try {
-        const res = await makePlan(t, a, d);
+        const res = await makePlan(t, d);
         setPlan(res.searches);
         setPhase("plan");
       } catch (e) {
@@ -126,36 +132,6 @@ export function useResearch() {
       }
     },
     [fail],
-  );
-
-  const submit = useCallback(
-    async (t: string, d: Depth) => {
-      setTopic(t);
-      setDepth(d);
-      setAnswers([]);
-      setLoadingLabel("Checking what needs clarifying");
-      setPhase("loading");
-      try {
-        const res = await clarify(t);
-        if (res.questions.length === 0) {
-          await draftPlan(t, [], d);
-        } else {
-          setQuestions(res.questions);
-          setPhase("clarify");
-        }
-      } catch (e) {
-        fail(e);
-      }
-    },
-    [draftPlan, fail],
-  );
-
-  const answer = useCallback(
-    (a: Answer[]) => {
-      setAnswers(a);
-      return draftPlan(topic, a, depth);
-    },
-    [draftPlan, topic, depth],
   );
 
   const approve = useCallback(
@@ -167,6 +143,8 @@ export function useResearch() {
       setSources([]);
       setFollowUps([]);
       setOutcome(null);
+      setStopped(false);
+      setApproved(true);
       setPlan(searches);
       setRun({
         stage: "searching",
@@ -180,7 +158,7 @@ export function useResearch() {
 
       try {
         for await (const ev of streamResearch(
-          { topic, answers, depth, searches },
+          { topic, depth, searches },
           abort.current.signal,
         )) {
           if (ev.type === "report") {
@@ -197,8 +175,7 @@ export function useResearch() {
           } else if (ev.type === "followups") {
             setFollowUps(ev.questions);
           } else if (ev.type === "done") {
-            if (timer.current) clearTimeout(timer.current);
-            timer.current = null;
+            clearTimer();
             setReport(ev.report);
             setFollowUps(ev.follow_ups);
             setOutcome({
@@ -217,35 +194,58 @@ export function useResearch() {
         if (!abort.current?.signal.aborted) fail(e);
       }
     },
-    [topic, answers, depth, fail],
+    [topic, depth, fail],
   );
+
+  const stop = useCallback(() => {
+    abort.current?.abort();
+    clearTimer();
+    setStopped(true);
+    if (buffer.current) {
+      setReport(buffer.current);
+      setPhase("report");
+    } else {
+      setApproved(false);
+      setPhase("plan");
+    }
+  }, []);
+
+  const retry = useCallback(() => {
+    if (plan.length > 0) {
+      setApproved(false);
+      setPhase("plan");
+    } else {
+      void submit(topic, depth);
+    }
+  }, [plan, submit, topic, depth]);
 
   const reset = useCallback(() => {
     abort.current?.abort();
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = null;
+    clearTimer();
     setPhase("ask");
     setRun(null);
     setReport("");
     setError("");
+    setApproved(false);
   }, []);
 
   return {
     phase,
-    loadingLabel,
     error,
     topic,
     depth,
-    questions,
     plan,
+    approved,
     run,
     report,
     sources,
     followUps,
     outcome,
+    stopped,
     submit,
-    answer,
     approve,
+    stop,
+    retry,
     reset,
   };
 }

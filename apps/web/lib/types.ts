@@ -5,16 +5,6 @@ export interface SearchItem {
   reason: string;
 }
 
-export interface ClarifyQuestion {
-  question: string;
-  suggestions: string[];
-}
-
-export interface Answer {
-  question: string;
-  answer: string;
-}
-
 export interface SourceRef {
   n: number;
   url: string;

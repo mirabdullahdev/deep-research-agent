@@ -1,4 +1,4 @@
-import type { Answer, ClarifyQuestion, Depth, SearchItem, ServerEvent } from "./types";
+import type { Depth, SearchItem, ServerEvent } from "./types";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -7,7 +7,9 @@ async function toError(res: Response): Promise<Error> {
     const body = await res.json();
     if (typeof body.detail === "string") return new Error(body.detail);
   } catch {}
-  if (res.status === 422) return new Error("Something in the request was out of bounds. Check the plan and try again.");
+  if (res.status === 422) {
+    return new Error("Something in the request was out of bounds. Check the plan and try again.");
+  }
   return new Error(`The server returned an error (${res.status}).`);
 }
 
@@ -26,15 +28,11 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   return res.json();
 }
 
-export const clarify = (topic: string) =>
-  post<{ questions: ClarifyQuestion[] }>("/api/clarify", { topic });
-
-export const makePlan = (topic: string, answers: Answer[], depth: Depth) =>
-  post<{ searches: SearchItem[] }>("/api/plan", { topic, answers, depth });
+export const makePlan = (topic: string, depth: Depth) =>
+  post<{ searches: SearchItem[] }>("/api/plan", { topic, depth });
 
 export interface RunRequest {
   topic: string;
-  answers: Answer[];
   depth: Depth;
   searches: SearchItem[];
 }
