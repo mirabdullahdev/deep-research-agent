@@ -1,0 +1,62 @@
+import asyncio
+from collections.abc import AsyncIterator
+
+from app.agents.budget import Budget
+from app.agents.deps import Deps
+from app.agents.depth import DEPTHS
+from app.agents.graph import build_graph
+from app.agents.llm import OpenAILLM
+from app.agents.search import TavilySearch
+from app.config import Settings
+
+MAX_PARALLEL_RESEARCHERS = 4
+_graph = build_graph()
+
+
+def build_deps(settings: Settings, depth: str, emit) -> Deps:
+    cfg = DEPTHS[depth]
+    budget = Budget(cap_usd=cfg.budget_usd)
+    return Deps(
+        planner=OpenAILLM(settings.planner_model, settings.openai_api_key, budget, "low"),
+        worker=OpenAILLM(settings.worker_model, settings.openai_api_key, budget, "low"),
+        writer=OpenAILLM(settings.planner_model, settings.openai_api_key, budget, "medium"),
+        search=TavilySearch(settings.tavily_api_key),
+        budget=budget,
+        depth=cfg,
+        emit=emit,
+        gate=asyncio.Semaphore(MAX_PARALLEL_RESEARCHERS),
+    )
+
+
+async def run_research(
+    topic: str, depth: str, make_deps=None, settings=None
+) -> AsyncIterator[dict]:
+    queue: asyncio.Queue[dict | None] = asyncio.Queue()
+    deps = (make_deps or build_deps)(settings, depth, queue.put_nowait)
+
+    async def work() -> None:
+        try:
+            out = await _graph.ainvoke(
+                {"topic": topic, "findings": [], "asked": [], "questions": [], "round": 0},
+                config={"configurable": {"deps": deps}, "recursion_limit": 50},
+            )
+            queue.put_nowait(
+                {
+                    "type": "done",
+                    "report": out["report"],
+                    "spent_usd": round(deps.budget.spent_usd, 4),
+                    "tokens_in": deps.budget.tokens_in,
+                    "tokens_out": deps.budget.tokens_out,
+                }
+            )
+        except Exception as exc:
+            queue.put_nowait({"type": "error", "detail": str(exc)})
+        finally:
+            queue.put_nowait(None)
+
+    task = asyncio.create_task(work())
+    try:
+        while (event := await queue.get()) is not None:
+            yield event
+    finally:
+        task.cancel()
