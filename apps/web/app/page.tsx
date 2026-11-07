@@ -28,8 +28,8 @@ export default function Home() {
   const r = useResearch();
   const inThread = r.phase !== "ask";
   const finished = r.outcome !== null;
-  const running = r.phase === "research" || (r.phase === "report" && !finished && !r.stopped);
-  const streaming = r.phase === "report" && !finished && !r.stopped;
+  const running = r.phase === "research" || (r.phase === "report" && !finished);
+  const streaming = r.phase === "report" && !finished;
 
   useEffect(() => {
     if (r.phase === "ask") window.scrollTo({ top: 0 });
@@ -82,7 +82,6 @@ export default function Home() {
                     run={r.run}
                     running={running}
                     reportStarted={r.phase === "report"}
-                    stopped={r.stopped}
                     outcome={r.outcome}
                   />
                 )}
@@ -93,7 +92,6 @@ export default function Home() {
                     report={r.report}
                     sources={r.sources}
                     streaming={streaming}
-                    stopped={r.stopped}
                   />
                 )}
 
@@ -111,7 +109,7 @@ export default function Home() {
 
                 {r.phase === "error" && !r.errorCode && (
                   <div role="alert" className="rounded-[4px] border border-buoy/40 bg-buoy/[0.07] p-5">
-                    <p className="font-display text-lg font-semibold">The run stopped</p>
+                    <p className="font-display text-lg font-semibold">The research could not finish</p>
                     <p className="mt-1 text-slate">{r.error}</p>
                     <button
                       onClick={r.retry}
@@ -126,8 +124,8 @@ export default function Home() {
           )}
         </AnimatePresence>
 
-        {inThread && (running || ["report", "reply"].includes(r.phase) || (r.phase === "error" && !r.errorCode)) && (
-          <Dock running={running} onStop={r.stop} onSubmit={r.submit} />
+        {inThread && !running && (["report", "reply"].includes(r.phase) || (r.phase === "error" && !r.errorCode)) && (
+          <Dock onSubmit={r.submit} />
         )}
       </div>
       </LazyMotion>

@@ -185,13 +185,11 @@ export function ActivityCard({
   run,
   running,
   reportStarted,
-  stopped,
   outcome,
 }: {
   run: RunState;
   running: boolean;
   reportStarted: boolean;
-  stopped: boolean;
   outcome: Outcome | null;
 }) {
   const [choice, setChoice] = useState<boolean | null>(null);
@@ -201,9 +199,7 @@ export function ActivityCard({
   const pool = LABELS[run.stage];
   const title = running
     ? pool[Math.floor(seconds / 3) % pool.length]
-    : stopped
-      ? "Research stopped"
-      : `Researched for ${outcome ? Math.round(outcome.elapsedMs / 1000) : seconds}s`;
+    : `Researched for ${outcome ? Math.round(outcome.elapsedMs / 1000) : seconds}s`;
 
   return (
     <section className="overflow-hidden rounded-[4px] bg-abyss text-[#dbe8f0] ring-1 ring-white/10">
@@ -220,7 +216,7 @@ export function ActivityCard({
               <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-buoy" />
             </span>
           ) : (
-            <span className="text-[#4fd1c5]">{stopped ? "■" : "✓"}</span>
+            <span className="text-[#4fd1c5]">✓</span>
           )}
           <m.span
             key={title}

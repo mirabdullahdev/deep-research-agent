@@ -94,7 +94,6 @@ export function useResearch() {
   const [report, setReport] = useState("");
   const [sources, setSources] = useState<SourceRef[]>([]);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
-  const [stopped, setStopped] = useState(false);
 
   const abort = useRef<AbortController | null>(null);
   const buffer = useRef("");
@@ -123,7 +122,6 @@ export function useResearch() {
       setReport("");
       setSources([]);
       setOutcome(null);
-      setStopped(false);
       setPhase("drafting");
       try {
         const res = await makePlan(t);
@@ -149,7 +147,6 @@ export function useResearch() {
       setReport("");
       setSources([]);
       setOutcome(null);
-      setStopped(false);
       setApproved(true);
       setPlan(steps);
       setRun({
@@ -205,19 +202,6 @@ export function useResearch() {
     [topic, fail],
   );
 
-  const stop = useCallback(() => {
-    abort.current?.abort();
-    clearTimer();
-    setStopped(true);
-    if (buffer.current) {
-      setReport(buffer.current);
-      setPhase("report");
-    } else {
-      setApproved(false);
-      setPhase("plan");
-    }
-  }, []);
-
   const retry = useCallback(() => {
     if (plan.length > 0) {
       setApproved(false);
@@ -226,16 +210,6 @@ export function useResearch() {
       void submit(topic);
     }
   }, [plan, submit, topic]);
-
-  const reset = useCallback(() => {
-    abort.current?.abort();
-    clearTimer();
-    setPhase("ask");
-    setRun(null);
-    setReport("");
-    setError("");
-    setApproved(false);
-  }, []);
 
   return {
     phase,
@@ -249,11 +223,8 @@ export function useResearch() {
     report,
     sources,
     outcome,
-    stopped,
     submit,
     approve,
-    stop,
     retry,
-    reset,
   };
 }

@@ -143,13 +143,11 @@ export function ReportView({
   report,
   sources,
   streaming,
-  stopped,
 }: {
   topic: string;
   report: string;
   sources: SourceRef[];
   streaming: boolean;
-  stopped: boolean;
 }) {
   const [copied, setCopied] = useState(false);
   const references = sources.filter((s) => isWebLink(s.url));
@@ -184,11 +182,6 @@ export function ReportView({
         <Block key={i} md={block} />
       ))}
       {streaming && <span className="cursor" aria-hidden />}
-      {stopped && (
-        <p className="mt-4 font-mono text-[12px] text-slate">
-          Stopped early. This report is incomplete.
-        </p>
-      )}
 
       {references.length > 0 && (
         <section className="mt-12 border-t border-ink/10 pt-8">
