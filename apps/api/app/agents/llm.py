@@ -1,4 +1,5 @@
 from collections.abc import AsyncIterator
+from functools import lru_cache
 from typing import Protocol, TypeVar
 
 from langchain_openai import ChatOpenAI
@@ -26,6 +27,17 @@ def _counts(usage: dict) -> tuple[int, int, int, int]:
     )
 
 
+@lru_cache(maxsize=16)
+def _chat(model: str, api_key: str, effort: str, max_tokens: int | None) -> ChatOpenAI:
+    return ChatOpenAI(
+        model=model,
+        api_key=api_key,
+        reasoning_effort=effort,
+        max_retries=3,
+        max_tokens=max_tokens,
+    )
+
+
 class OpenAILLM:
     def __init__(
         self,
@@ -37,13 +49,7 @@ class OpenAILLM:
     ):
         self.model = model
         self.budget = budget
-        self.client = ChatOpenAI(
-            model=model,
-            api_key=api_key,
-            reasoning_effort=effort,
-            max_retries=3,
-            max_tokens=max_tokens,
-        )
+        self.client = _chat(model, api_key, effort, max_tokens)
 
     async def structured(self, schema: type[T], system: str, user: str) -> T:
         chain = self.client.with_structured_output(schema, include_raw=True)

@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import { useRef, useState } from "react";
 
 const MAX_STEPS = 7;
@@ -48,7 +48,7 @@ export function PlanCard({
 
       <AnimatePresence initial={false}>
         {open && (
-          <motion.div
+          <m.div
             key="body"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
@@ -123,7 +123,7 @@ export function PlanCard({
             </div>
           )}
         </div>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
     </section>

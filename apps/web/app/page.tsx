@@ -1,13 +1,16 @@
 "use client";
 
-import { AnimatePresence, MotionConfig, motion } from "framer-motion";
+import { AnimatePresence, LazyMotion, MotionConfig, domAnimation, m } from "framer-motion";
+import dynamic from "next/dynamic";
 import { useEffect } from "react";
 import { ActivityCard } from "@/components/ActivityCard";
 import { Dock } from "@/components/Dock";
 import { PlanCard } from "@/components/PlanCard";
 import { PromptStep } from "@/components/PromptStep";
-import { ReportView } from "@/components/ReportView";
 import { useResearch } from "@/lib/useResearch";
+
+const loadReport = () => import("@/components/ReportView");
+const ReportView = dynamic(() => loadReport().then((mod) => mod.ReportView), { ssr: false });
 
 function Pulse({ label }: { label: string }) {
   return (
@@ -30,24 +33,25 @@ export default function Home() {
 
   useEffect(() => {
     if (r.phase === "ask") window.scrollTo({ top: 0 });
+    if (r.phase === "research") void loadReport();
   }, [r.phase]);
 
   return (
     <MotionConfig reducedMotion="user">
+      <LazyMotion features={domAnimation} strict>
       <div className="relative min-h-screen overflow-x-clip">
-
         <AnimatePresence mode="wait">
           {!inThread ? (
-            <motion.main
+            <m.main
               key="landing"
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.25 }}
               className="relative z-10 mx-auto max-w-2xl px-6 pb-24 pt-14 lg:pt-24"
             >
               <PromptStep initial={r.topic} onSubmit={r.submit} />
-            </motion.main>
+            </m.main>
           ) : (
-            <motion.main
+            <m.main
               key="thread"
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
@@ -118,7 +122,7 @@ export default function Home() {
                   </div>
                 )}
               </div>
-            </motion.main>
+            </m.main>
           )}
         </AnimatePresence>
 
@@ -126,6 +130,7 @@ export default function Home() {
           <Dock running={running} onStop={r.stop} onSubmit={r.submit} />
         )}
       </div>
+      </LazyMotion>
     </MotionConfig>
   );
 }

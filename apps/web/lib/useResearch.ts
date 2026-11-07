@@ -162,6 +162,7 @@ export function useResearch() {
       });
       setPhase("research");
 
+      let finished = false;
       try {
         for await (const ev of streamResearch(
           { topic, steps },
@@ -174,11 +175,12 @@ export function useResearch() {
               timer.current = setTimeout(() => {
                 setReport(buffer.current);
                 timer.current = null;
-              }, 70);
+              }, 160);
             }
           } else if (ev.type === "sources") {
             setSources(ev.sources);
           } else if (ev.type === "done") {
+            finished = true;
             clearTimer();
             setReport(ev.report);
             setOutcome({
@@ -192,6 +194,9 @@ export function useResearch() {
           } else {
             setRun((r) => (r ? reduceRun(r, ev) : r));
           }
+        }
+        if (!finished && !abort.current?.signal.aborted) {
+          throw new Error("The connection was interrupted before the report finished. Please try again.");
         }
       } catch (e) {
         if (!abort.current?.signal.aborted) fail(e);

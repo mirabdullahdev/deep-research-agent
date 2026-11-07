@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, m, useReducedMotion } from "framer-motion";
 import { useEffect, useState } from "react";
 import type { AgentState, Outcome, RunState } from "@/lib/useResearch";
 
@@ -69,7 +69,7 @@ function SonarMap({ run, live }: { run: RunState; live: boolean }) {
         return (
           <g key={a.query}>
             {a.status !== "queued" && (
-              <motion.line
+              <m.line
                 x1={CX}
                 y1={CY}
                 x2={p.x}
@@ -86,16 +86,16 @@ function SonarMap({ run, live }: { run: RunState; live: boolean }) {
             {active &&
               !calm &&
               [0, 1].map((d) => (
-                <motion.circle
+                <circle
                   key={d}
                   cx={p.x}
                   cy={p.y}
+                  r={8}
                   fill="none"
                   stroke="#ff5b2e"
                   strokeWidth={1.2}
-                  initial={{ r: 8, opacity: 0.7 }}
-                  animate={{ r: 52, opacity: 0 }}
-                  transition={{ duration: 2.4, repeat: Infinity, delay: d * 1.2, ease: "easeOut" }}
+                  className="sonar-ping"
+                  style={{ animationDelay: `${d * 1.2}s` }}
                 />
               ))}
 
@@ -103,7 +103,7 @@ function SonarMap({ run, live }: { run: RunState; live: boolean }) {
               const ang = hash(s.url) * Math.PI * 2;
               const dist = 20 + hash(s.url + "d") * 24;
               return (
-                <motion.circle
+                <m.circle
                   key={s.url}
                   cx={p.x + Math.cos(ang) * dist}
                   cy={p.y + Math.sin(ang) * dist}
@@ -116,7 +116,7 @@ function SonarMap({ run, live }: { run: RunState; live: boolean }) {
               );
             })}
 
-            <motion.circle
+            <m.circle
               cx={p.x}
               cy={p.y}
               r={7}
@@ -133,15 +133,14 @@ function SonarMap({ run, live }: { run: RunState; live: boolean }) {
 
       <circle cx={CX} cy={CY} r={5} fill="#ff5b2e" />
       {!calm && (
-        <motion.circle
+        <circle
           cx={CX}
           cy={CY}
+          r={6}
           fill="none"
           stroke="#ff5b2e"
           strokeOpacity={0.6}
-          initial={{ r: 6, opacity: 0.8 }}
-          animate={{ r: 30, opacity: 0 }}
-          transition={{ duration: 2.8, repeat: Infinity, ease: "easeOut" }}
+          className="sonar-core"
         />
       )}
     </svg>
@@ -223,7 +222,7 @@ export function ActivityCard({
           ) : (
             <span className="text-[#4fd1c5]">{stopped ? "■" : "✓"}</span>
           )}
-          <motion.span
+          <m.span
             key={title}
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
@@ -231,7 +230,7 @@ export function ActivityCard({
             className="font-display text-base font-medium"
           >
             {title}
-          </motion.span>
+          </m.span>
         </span>
         {running && (
           <span className="font-mono text-[12px] text-[#4ade80]">{clock(seconds)}</span>
@@ -240,7 +239,7 @@ export function ActivityCard({
 
       <AnimatePresence initial={false}>
         {open && (
-          <motion.div
+          <m.div
             key="map"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
@@ -251,7 +250,7 @@ export function ActivityCard({
             <div className="border-t border-white/10 px-2 py-3 sm:px-5">
               <SonarMap run={run} live={running} />
             </div>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
     </section>

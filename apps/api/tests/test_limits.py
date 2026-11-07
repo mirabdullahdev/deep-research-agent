@@ -118,7 +118,7 @@ def client(monkeypatch):
     async def fake_guard(*texts):
         return None
 
-    async def fake_run(topic, depth, settings=None, steps=None):
+    async def fake_run(topic, settings=None, steps=None):
         yield {"type": "usage", "spent_usd": 0.05, "cap_usd": 0.5}
         yield {"type": "done", "report": "ok", "spent_usd": 0.1, "tokens_in": 1, "tokens_out": 1}
 
@@ -143,16 +143,17 @@ def test_route_allows_one_deep_run_then_refuses_neutrally(client):
     assert "testing allowance" in again.json()["detail"]["message"]
 
 
-def test_the_depth_chosen_by_the_client_is_ignored(client, monkeypatch):
+def test_unknown_fields_from_the_client_are_ignored(client, monkeypatch):
     seen = {}
 
-    async def spy(topic, depth, settings=None, steps=None):
-        seen["depth"] = depth
+    async def spy(topic, settings=None, steps=None):
+        seen.update(topic=topic, steps=steps)
         yield {"type": "done", "report": "ok", "spent_usd": 0.1, "tokens_in": 1, "tokens_out": 1}
 
     monkeypatch.setattr(research, "run_research", spy)
-    client.post("/api/research", json={**BODY, "depth": "quick"}, headers=HEADERS)
-    assert seen["depth"] == "deep"
+    extra = {**BODY, "depth": "quick", "budget": 99, "model": "gpt-5-pro"}
+    assert client.post("/api/research", json=extra, headers=HEADERS).status_code == 200
+    assert seen == {"topic": BODY["topic"], "steps": BODY["steps"]}
 
 
 def test_plan_is_refused_early_once_the_run_is_used(client, monkeypatch):
@@ -167,13 +168,13 @@ def test_plan_is_refused_early_once_the_run_is_used(client, monkeypatch):
 
 
 def test_cheap_failure_does_not_use_up_the_attempt(client, monkeypatch):
-    async def failing_run(topic, depth, settings=None, steps=None):
+    async def failing_run(topic, settings=None, steps=None):
         yield {"type": "error", "detail": "search provider down"}
 
     monkeypatch.setattr(research, "run_research", failing_run)
     assert client.post("/api/research", json=BODY, headers=HEADERS).status_code == 200
 
-    async def good_run(topic, depth, settings=None, steps=None):
+    async def good_run(topic, settings=None, steps=None):
         yield {"type": "done", "report": "ok", "spent_usd": 0.1, "tokens_in": 1, "tokens_out": 1}
 
     monkeypatch.setattr(research, "run_research", good_run)
@@ -181,7 +182,7 @@ def test_cheap_failure_does_not_use_up_the_attempt(client, monkeypatch):
 
 
 def test_failure_after_real_spend_is_not_refunded(client, monkeypatch):
-    async def costly_failure(topic, depth, settings=None, steps=None):
+    async def costly_failure(topic, settings=None, steps=None):
         yield {"type": "usage", "spent_usd": 0.2, "cap_usd": 0.5}
         yield {"type": "error", "detail": "late failure"}
 

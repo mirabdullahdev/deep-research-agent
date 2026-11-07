@@ -25,7 +25,7 @@ def test_plan_returns_steps(client, monkeypatch):
         return ["Map the market.", "Compare the leaders."], ""
 
     monkeypatch.setattr(intake, "make_plan", fake)
-    res = client.post("/api/plan", json={"topic": "EV adoption", "depth": "quick"})
+    res = client.post("/api/plan", json={"topic": "EV adoption"})
     assert res.status_code == 200
     assert res.json() == {"steps": ["Map the market.", "Compare the leaders."], "reply": ""}
 

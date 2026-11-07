@@ -52,6 +52,8 @@ class LimitStore:
         db_path.parent.mkdir(parents=True, exist_ok=True)
         self.db = sqlite3.connect(db_path, check_same_thread=False, isolation_level=None)
         self.lock = threading.Lock()
+        self.db.execute("PRAGMA journal_mode=WAL")
+        self.db.execute("PRAGMA synchronous=NORMAL")
         self.db.execute(
             "CREATE TABLE IF NOT EXISTS runs ("
             "id INTEGER PRIMARY KEY AUTOINCREMENT, visitor TEXT NOT NULL, ip TEXT NOT NULL, "
@@ -61,6 +63,13 @@ class LimitStore:
             "CREATE TABLE IF NOT EXISTS plans (id INTEGER PRIMARY KEY AUTOINCREMENT, "
             "ip TEXT NOT NULL, ts REAL NOT NULL)"
         )
+        for statement in (
+            "CREATE INDEX IF NOT EXISTS runs_visitor ON runs (visitor)",
+            "CREATE INDEX IF NOT EXISTS runs_ip_ts ON runs (ip, ts)",
+            "CREATE INDEX IF NOT EXISTS plans_ip_ts ON plans (ip, ts)",
+            "CREATE INDEX IF NOT EXISTS plans_ts ON plans (ts)",
+        ):
+            self.db.execute(statement)
 
     @contextmanager
     def _transaction(self):

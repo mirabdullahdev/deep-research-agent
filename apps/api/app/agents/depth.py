@@ -10,8 +10,10 @@ class DepthConfig:
     report_words: int
 
 
-DEPTHS: dict[str, DepthConfig] = {
-    "quick": DepthConfig(3, 3, 0, 0.05, 600),
-    "standard": DepthConfig(5, 4, 1, 0.15, 1100),
-    "deep": DepthConfig(8, 6, 3, 0.50, 2200),
-}
+DEEP = DepthConfig(
+    questions=8,
+    results_per_question=6,
+    reflection_rounds=3,
+    budget_usd=0.50,
+    report_words=2200,
+)

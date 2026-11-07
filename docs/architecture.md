@@ -3,49 +3,66 @@
 ## Goals
 
 - Real multi-step research, not a single prompt wrapped in a UI.
-- A live, animated view of what the agents are doing.
-- Hard cost limits: roughly $5 of OpenAI credit has to last, and AWS should cost close to nothing when idle.
+- A live view of what the agents are doing, with the user in control of the plan.
+- Hard cost limits: a small OpenAI budget has to stretch across many visitors.
+
+## Request flow
+
+```
+POST /api/plan      topic -> five plain-language steps (or a short reply for small talk)
+POST /api/research  topic + approved steps -> Server-Sent Events stream
+GET  /health        liveness check
+```
+
+Nothing else is exposed: the interactive docs and schema endpoints are disabled.
 
 ## Agent graph
 
 ```
-topic -> planner -> [researcher x N, parallel] -> reflector -> (gaps? loop, max 2) -> writer -> report
+plan -> research (parallel, up to 8 at once) -> reflect -> (gaps? loop, max 3 rounds) -> write
 ```
 
-| Node | Job | Model tier |
+| Node | Job | Model |
 |---|---|---|
-| Planner | Split the topic into sub-questions | strong |
-| Researcher | Search, read top sources, extract cited facts | small |
-| Reflector | Find gaps and contradictions, request follow-ups | small |
-| Writer | Produce the structured report with inline citations | strong |
+| Intake (`/api/plan`) | Decide if the message is research, then outline five steps | small |
+| Plan | Turn the approved steps into search queries, each with a reason | small |
+| Research | Search, read the sources, extract cited facts | small |
+| Reflect | Find gaps and missing numbers, request follow-up searches | small |
+| Write | Produce the formal report from the extracted facts | large |
 
-Each run has a depth mode (quick, standard, deep) that sets the number of sub-questions, sources read, and reflection rounds. Every mode has a hard token and search budget.
+Extracted claims are only kept if their URL was one of the sources actually returned, which blocks invented citations. The report carries no inline citation markers; a reference list of all sources is appended instead, and the writer names key sources in the prose.
 
-## Streaming
+## Streaming events
 
-`POST /api/research` returns a Server-Sent Events stream. Events:
-
-- `stage`: the pipeline moved to a new stage
-- `agent`: an individual researcher started, found a source, or finished
-- `report`: partial or final report content
-- `done` / `error`
-
-The frontend maps these events to the animated research view.
+`stage`, `plan`, `agent`, `source`, `gaps`, `usage`, `report`, `sources`, `done`, `error`. The frontend turns these into the animated research view and the streaming report. Report text is batched into chunks of about 24 characters before it is sent.
 
 ## Cost and abuse controls
 
-- Per-IP daily run limit, stored in DynamoDB with TTL.
-- Global daily budget counter; when exhausted the site falls back to demo mode.
-- Per-run token budget enforced inside the graph.
-- Spending cap on the OpenAI project key as a last resort.
-- Pre-generated sample reports that replay with the same animation at zero cost.
-- Bot protection with Cloudflare Turnstile.
+- **One research run per visitor.** Visitors are identified by a browser id header, with the network address as a fallback.
+- **Per-network cap** of three runs a day, with IPv6 addresses grouped by /64 and proxy headers trusted only for a configured number of hops.
+- **Global spending cap.** Total recorded spend, plus an estimate for planning calls, stops all runs when exhausted.
+- **Planning is rate limited** per network and in total, and refused early once a visitor has used their run.
+- **Concurrency cap** on simultaneous runs, with a run timeout.
+- **Refunds only for cheap failures**, so forcing errors cannot be used to get free runs.
+- **Bounded output**: token limits on every model call, a hard per-run spend stop, and a research budget per run.
+- **Moderation** on the topic and any edited plan text.
+- **Generic error messages** for anything unexpected; details stay in server logs.
 
-## Deployment
+Refusal messages are deliberately neutral and do not reveal the limits.
 
-- Web: static Next.js export on S3 behind CloudFront.
-- API: FastAPI on Lambda (container image with Lambda Web Adapter, response streaming).
-- State: DynamoDB on-demand.
-- Defined with AWS CDK in `infra/`.
+## Cost model
 
-Deployment comes after the core agent pipeline and UI work locally.
+Token counts come from the API responses. Cost is those counts multiplied by the price table in `apps/api/app/agents/budget.py`, with cached input billed at the cached rate. One measured deep run: about $0.11 for a 17-search run, of which roughly 60% was the single report-writing call.
+
+## Frontend notes
+
+- Static export, so it can be hosted on any static host.
+- The animation library is loaded in its lightweight form, the markdown renderer loads when research starts, and the sonar rings use CSS animations.
+- The report renders on a light sheet for readability, and respects reduced-motion settings.
+
+## Deployment (not done yet)
+
+- Web: static files on S3 behind CloudFront.
+- API: FastAPI on Lambda with response streaming.
+- Limits: the local SQLite store must move to DynamoDB with conditional writes, since Lambda instances do not share a disk.
+- Set `TRUSTED_PROXIES` to the number of proxies in front of the API. If it is left at zero behind a proxy, every visitor appears to share one address.

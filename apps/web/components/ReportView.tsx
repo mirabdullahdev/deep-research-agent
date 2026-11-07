@@ -1,11 +1,58 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { useState } from "react";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { SourceRef } from "@/lib/types";
 import { domain } from "./ActivityCard";
+
+const plugins = [remarkGfm];
+
+const components: Components = {
+  h1: ({ children }) => (
+    <h2 className="mb-6 font-display text-3xl font-semibold leading-tight tracking-tight">
+      {children}
+    </h2>
+  ),
+  h2: ({ children }) => (
+    <h3 className="mb-3 mt-12 border-t border-ink/10 pt-8 font-display text-xl font-semibold tracking-tight">
+      {children}
+    </h3>
+  ),
+  h3: ({ children }) => <h4 className="mb-2 mt-8 font-display text-lg font-semibold">{children}</h4>,
+  p: ({ children }) => <p className="my-5 text-[16.5px] leading-[1.8]">{children}</p>,
+  ul: ({ children }) => (
+    <ul className="my-5 list-disc space-y-2 pl-6 text-[16.5px] leading-[1.75] marker:text-buoy">
+      {children}
+    </ul>
+  ),
+  ol: ({ children }) => (
+    <ol className="my-5 list-decimal space-y-2 pl-6 text-[16.5px] leading-[1.75]">{children}</ol>
+  ),
+  strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+  a: ({ href, children }) => (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="underline decoration-buoy underline-offset-4"
+    >
+      {children}
+    </a>
+  ),
+  table: ({ children }) => (
+    <div className="my-6 overflow-x-auto">
+      <table className="w-full border-collapse text-left text-[15px]">{children}</table>
+    </div>
+  ),
+  th: ({ children }) => (
+    <th className="border-b border-ink/25 px-3 py-2 font-display font-semibold">{children}</th>
+  ),
+  td: ({ children }) => (
+    <td className="border-b border-ink/10 px-3 py-2 align-top leading-relaxed">{children}</td>
+  ),
+};
 
 const tidy = (md: string) =>
   md
@@ -22,8 +69,13 @@ function forDisplay(md: string, streaming: boolean) {
   return blocks.join("\n\n");
 }
 
+const isWebLink = (url: string) => /^https?:\/\//i.test(url);
+
 function toMarkdown(report: string, sources: SourceRef[]) {
-  const list = sources.map((s) => `${s.n}. [${s.title}](${s.url})`).join("\n");
+  const list = sources
+    .filter((s) => isWebLink(s.url))
+    .map((s) => `${s.n}. [${s.title}](${s.url})`)
+    .join("\n");
   const body = tidy(report);
   return list ? `${body}\n\n## References\n\n${list}\n` : `${body}\n`;
 }
@@ -42,6 +94,7 @@ export function ReportView({
   stopped: boolean;
 }) {
   const [copied, setCopied] = useState(false);
+  const references = sources.filter((s) => isWebLink(s.url));
 
   const copy = async () => {
     try {
@@ -63,62 +116,13 @@ export function ReportView({
   };
 
   return (
-    <motion.article
+    <m.article
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
       className="rounded-[4px] bg-paper px-5 py-8 text-ink shadow-[0_30px_70px_-35px_rgba(0,0,0,0.85)] [--ink:#1c1733] [--mist:#d8d1ee] [--paper:#f3effd] [--slate:#6c6786] sm:px-10 sm:py-12"
     >
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        components={{
-          h1: ({ children }) => (
-            <h2 className="mb-6 font-display text-3xl font-semibold leading-tight tracking-tight">
-              {children}
-            </h2>
-          ),
-          h2: ({ children }) => (
-            <h3 className="mb-3 mt-12 border-t border-ink/10 pt-8 font-display text-xl font-semibold tracking-tight">
-              {children}
-            </h3>
-          ),
-          h3: ({ children }) => (
-            <h4 className="mb-2 mt-8 font-display text-lg font-semibold">{children}</h4>
-          ),
-          p: ({ children }) => <p className="my-5 text-[16.5px] leading-[1.8]">{children}</p>,
-          ul: ({ children }) => (
-            <ul className="my-5 list-disc space-y-2 pl-6 text-[16.5px] leading-[1.75] marker:text-buoy">
-              {children}
-            </ul>
-          ),
-          ol: ({ children }) => (
-            <ol className="my-5 list-decimal space-y-2 pl-6 text-[16.5px] leading-[1.75]">
-              {children}
-            </ol>
-          ),
-          strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-          a: ({ href, children }) => (
-            <a href={href} className="underline decoration-buoy underline-offset-4">
-              {children}
-            </a>
-          ),
-          table: ({ children }) => (
-            <div className="my-6 overflow-x-auto">
-              <table className="w-full border-collapse text-left text-[15px]">{children}</table>
-            </div>
-          ),
-          th: ({ children }) => (
-            <th className="border-b border-ink/25 px-3 py-2 font-display font-semibold">
-              {children}
-            </th>
-          ),
-          td: ({ children }) => (
-            <td className="border-b border-ink/10 px-3 py-2 align-top leading-relaxed">
-              {children}
-            </td>
-          ),
-        }}
-      >
+      <ReactMarkdown remarkPlugins={plugins} components={components}>
         {forDisplay(report, streaming)}
       </ReactMarkdown>
       {streaming && <span className="cursor" aria-hidden />}
@@ -128,11 +132,11 @@ export function ReportView({
         </p>
       )}
 
-      {sources.length > 0 && (
+      {references.length > 0 && (
         <section className="mt-12 border-t border-ink/10 pt-8">
           <h3 className="font-display text-xl font-semibold tracking-tight">References</h3>
           <ol className="mt-5 space-y-3">
-            {sources.map((s) => (
+            {references.map((s) => (
               <li key={s.n} className="flex gap-3 text-sm">
                 <span className="w-6 shrink-0 text-slate">{s.n}.</span>
                 <a
@@ -166,6 +170,6 @@ export function ReportView({
           </button>
         </div>
       )}
-    </motion.article>
+    </m.article>
   );
 }

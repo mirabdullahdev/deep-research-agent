@@ -6,39 +6,38 @@ from collections.abc import AsyncIterator
 from app.agents import usage_log
 from app.agents.budget import Budget
 from app.agents.deps import Deps
-from app.agents.depth import DEPTHS
+from app.agents.depth import DEEP
 from app.agents.errors import GENERIC_ERROR, UserFacingError
 from app.agents.graph import build_graph
 from app.agents.llm import OpenAILLM
 from app.agents.search import TavilySearch
 from app.config import Settings
 
-MAX_PARALLEL_RESEARCHERS = 4
+MAX_PARALLEL_RESEARCHERS = 8
 RUN_TIMEOUT_SECONDS = 600
 log = logging.getLogger(__name__)
 _graph = build_graph()
 
 
-def build_deps(settings: Settings, depth: str, emit) -> Deps:
-    cfg = DEPTHS[depth]
-    budget = Budget(cap_usd=cfg.budget_usd)
+def build_deps(settings: Settings, emit) -> Deps:
+    budget = Budget(cap_usd=DEEP.budget_usd)
     return Deps(
         planner=OpenAILLM(settings.worker_model, settings.openai_api_key, budget, "low", 3000),
         worker=OpenAILLM(settings.worker_model, settings.openai_api_key, budget, "minimal", 6000),
         writer=OpenAILLM(settings.writer_model, settings.openai_api_key, budget, "low", 16000),
         search=TavilySearch(settings.tavily_api_key),
         budget=budget,
-        depth=cfg,
+        depth=DEEP,
         emit=emit,
         gate=asyncio.Semaphore(MAX_PARALLEL_RESEARCHERS),
     )
 
 
 async def run_research(
-    topic: str, depth: str, make_deps=None, settings=None, steps=None
+    topic: str, make_deps=None, settings=None, steps=None
 ) -> AsyncIterator[dict]:
     queue: asyncio.Queue[dict | None] = asyncio.Queue()
-    deps = (make_deps or build_deps)(settings, depth, queue.put_nowait)
+    deps = (make_deps or build_deps)(settings, queue.put_nowait)
     started = time.monotonic()
     status = "ok"
 

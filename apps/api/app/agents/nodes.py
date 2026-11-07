@@ -10,6 +10,8 @@ from app.agents.errors import UserFacingError
 from app.agents.schemas import Extraction, Finding, Gaps, Plan, SearchItem
 from app.agents.text import plain, strip_citations
 
+STREAM_CHUNK_CHARS = 24
+
 
 class State(TypedDict):
     topic: str
@@ -140,12 +142,18 @@ async def write(state: State, config: RunnableConfig) -> dict:
     notes = "\n\n".join(f"### {q}\n" + "\n".join(lines) for q, lines in grouped.items())
 
     parts: list[str] = []
+    pending = ""
     async for delta in deps.writer.stream(
         prompts.WRITER.format(words=deps.depth.report_words),
         f"Topic: {state['topic']}\n\nFindings:\n\n{notes}",
     ):
         parts.append(delta)
-        deps.emit({"type": "report", "delta": delta})
+        pending += delta
+        if len(pending) >= STREAM_CHUNK_CHARS:
+            deps.emit({"type": "report", "delta": pending})
+            pending = ""
+    if pending:
+        deps.emit({"type": "report", "delta": pending})
     body = plain(strip_citations("".join(parts))).strip()
 
     sources = [{"n": n, "url": url, "title": titles[url]} for url, n in numbering.items()]

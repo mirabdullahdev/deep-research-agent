@@ -1,3 +1,5 @@
+import asyncio
+import contextlib
 import json
 from typing import Annotated
 
@@ -13,7 +15,6 @@ from app.limits import LimitStore, get_identity, get_store, refuse
 
 router = APIRouter(tags=["research"])
 
-DEPTH = "deep"
 MAX_STEPS = 7
 
 Identity = Annotated[tuple[str, str], Depends(get_identity)]
@@ -54,8 +55,15 @@ async def plan(
 ):
     if settings.rate_limit_enabled and (reason := store.reserve_plan(*identity, settings)):
         raise refuse(reason)
-    await guard(req.topic)
-    steps, reply = await intake.make_plan(settings, req.topic)
+    planning = asyncio.create_task(intake.make_plan(settings, req.topic))
+    try:
+        await guard(req.topic)
+    except BaseException:
+        planning.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await planning
+        raise
+    steps, reply = await planning
     return PlanOut(steps=steps, reply=reply)
 
 
@@ -83,9 +91,7 @@ async def start_research(
     async def events():
         spent, failed = 0.0, False
         try:
-            async for event in run_research(
-                req.topic, DEPTH, settings=settings, steps=req.steps
-            ):
+            async for event in run_research(req.topic, settings=settings, steps=req.steps):
                 if event["type"] in ("usage", "done"):
                     spent = event["spent_usd"]
                 failed = failed or event["type"] == "error"

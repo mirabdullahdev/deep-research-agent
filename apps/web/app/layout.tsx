@@ -1,22 +1,16 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, Inter, Poppins } from "next/font/google";
+import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
 
 const display = Poppins({
   variable: "--f-display",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600"],
 });
 
 const body = Inter({
   variable: "--f-body",
   subsets: ["latin"],
-});
-
-const mono = IBM_Plex_Mono({
-  variable: "--f-mono",
-  subsets: ["latin"],
-  weight: ["400", "500"],
 });
 
 export const metadata: Metadata = {
@@ -27,7 +21,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`}>
+    <html lang="en" className={`${display.variable} ${body.variable}`}>
+      <head>
+        <link rel="preload" href="/bg.webp" as="image" type="image/webp" />
+      </head>
       <body className="min-h-screen antialiased">{children}</body>
     </html>
   );

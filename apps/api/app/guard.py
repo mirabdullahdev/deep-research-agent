@@ -1,4 +1,5 @@
 from collections.abc import Awaitable, Callable
+from functools import lru_cache
 from typing import Annotated
 
 from fastapi import Depends, HTTPException
@@ -9,11 +10,16 @@ from app.config import Settings, get_settings
 Guard = Callable[..., Awaitable[None]]
 
 
+@lru_cache
+def _client(api_key: str) -> AsyncOpenAI:
+    return AsyncOpenAI(api_key=api_key)
+
+
 async def moderate(settings: Settings, *texts: str) -> None:
     joined = "\n".join(t for t in texts if t.strip())
     if not joined:
         return
-    client = AsyncOpenAI(api_key=settings.openai_api_key)
+    client = _client(settings.openai_api_key)
     try:
         res = await client.moderations.create(model="omni-moderation-latest", input=joined)
     except Exception as exc:
