@@ -6,6 +6,7 @@ from langgraph.types import Send
 
 from app.agents import prompts
 from app.agents.deps import Deps
+from app.agents.errors import UserFacingError
 from app.agents.schemas import Extraction, Finding, Gaps, Plan, SearchItem
 from app.agents.text import plain, strip_citations
 
@@ -57,6 +58,10 @@ async def research(payload: dict, config: RunnableConfig) -> dict:
     query = item.query
     deps.emit({"type": "agent", "event": "start", "question": query, "reason": item.reason})
 
+    if deps.budget.spent_usd >= deps.budget.cap_usd:
+        deps.emit({"type": "agent", "event": "done", "question": query, "findings": 0})
+        return {"asked": [query], "findings": []}
+
     async with deps.gate:
         try:
             sources = await deps.search.search(query, deps.depth.results_per_question)
@@ -76,8 +81,8 @@ async def research(payload: dict, config: RunnableConfig) -> dict:
                 f"Topic: {payload['topic']}\nSearch: {query}\nWhy it matters: {item.reason}"
                 f"\n\nSources:\n{blocks}",
             )
-        except Exception as exc:
-            deps.emit({"type": "agent", "event": "error", "question": query, "detail": str(exc)})
+        except Exception:
+            deps.emit({"type": "agent", "event": "error", "question": query})
             return {"asked": [query], "findings": []}
 
     findings = [
@@ -120,7 +125,7 @@ def after_reflect(state: State) -> list[Send] | str:
 async def write(state: State, config: RunnableConfig) -> dict:
     deps = _deps(config)
     if not state["findings"]:
-        raise RuntimeError("No usable sources were found for this topic.")
+        raise UserFacingError("No usable sources were found for this topic.")
 
     deps.emit({"type": "stage", "stage": "writing"})
     numbering: dict[str, int] = {}

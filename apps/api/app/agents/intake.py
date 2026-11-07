@@ -11,7 +11,7 @@ FALLBACK_REPLY = "I research topics and questions on the web. What would you lik
 
 async def make_plan(settings: Settings, topic: str) -> tuple[list[str], str]:
     budget = Budget(cap_usd=0.01)
-    llm = OpenAILLM(settings.worker_model, settings.openai_api_key, budget, "low")
+    llm = OpenAILLM(settings.worker_model, settings.openai_api_key, budget, "low", 3000)
     result = await llm.structured(
         Outline, prompts.OUTLINE.format(n=PLAN_STEPS), f"Message: {topic}"
     )

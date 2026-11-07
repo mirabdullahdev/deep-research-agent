@@ -5,15 +5,27 @@ const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 const headers = () => ({ "Content-Type": "application/json", "X-Visitor-Id": visitorId() });
 
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly code?: string,
+  ) {
+    super(message);
+  }
+}
+
 async function toError(res: Response): Promise<Error> {
   try {
-    const body = await res.json();
-    if (typeof body.detail === "string") return new Error(body.detail);
+    const detail = (await res.json()).detail;
+    if (typeof detail === "string") return new ApiError(detail);
+    if (detail && typeof detail.message === "string") {
+      return new ApiError(detail.message, detail.code);
+    }
   } catch {}
   if (res.status === 422) {
     return new Error("Something in the request was out of bounds. Check the plan and try again.");
   }
-  return new Error(`The server returned an error (${res.status}).`);
+  return new Error("The server could not complete the request. Please try again.");
 }
 
 async function post<T>(path: string, body: unknown): Promise<T> {

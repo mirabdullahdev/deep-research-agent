@@ -1,5 +1,6 @@
 "use client";
 
+import { AnimatePresence, motion } from "framer-motion";
 import { useRef, useState } from "react";
 
 const MAX_STEPS = 7;
@@ -45,7 +46,16 @@ export function PlanCard({
         <span className="font-display text-lg font-semibold">Research plan</span>
       </button>
 
-      {open && (
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            key="body"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            className="overflow-hidden"
+          >
         <div className="px-5 pb-5">
           <ol className="space-y-3">
             {rows.map((r, i) => (
@@ -113,7 +123,9 @@ export function PlanCard({
             </div>
           )}
         </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }

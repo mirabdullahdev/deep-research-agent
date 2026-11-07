@@ -1,5 +1,5 @@
 import json
-from typing import Annotated, Literal
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, model_validator
@@ -9,11 +9,11 @@ from app.agents import intake
 from app.agents.runner import run_research
 from app.config import Settings, get_settings
 from app.guard import Guard, get_guard
-from app.limits import MESSAGES, LimitStore, get_identity, get_store
+from app.limits import LimitStore, get_identity, get_store, refuse
 
 router = APIRouter(tags=["research"])
 
-Depth = Literal["quick", "standard", "deep"]
+DEPTH = "deep"
 MAX_STEPS = 7
 
 Identity = Annotated[tuple[str, str], Depends(get_identity)]
@@ -22,7 +22,6 @@ Store = Annotated[LimitStore, Depends(get_store)]
 
 class PlanIn(BaseModel):
     topic: str = Field(min_length=3, max_length=300)
-    depth: Depth = "deep"
 
 
 class PlanOut(BaseModel):
@@ -45,10 +44,6 @@ class RunIn(PlanIn):
         return self
 
 
-def _refuse(reason: str) -> HTTPException:
-    return HTTPException(429, MESSAGES[reason])
-
-
 @router.post("/plan", response_model=PlanOut)
 async def plan(
     req: PlanIn,
@@ -57,8 +52,8 @@ async def plan(
     store: Store,
     identity: Identity,
 ):
-    if settings.rate_limit_enabled and (reason := store.refusal(*identity, settings)):
-        raise _refuse(reason)
+    if settings.rate_limit_enabled and (reason := store.reserve_plan(*identity, settings)):
+        raise refuse(reason)
     await guard(req.topic)
     steps, reply = await intake.make_plan(settings, req.topic)
     return PlanOut(steps=steps, reply=reply)
@@ -74,9 +69,9 @@ async def start_research(
 ):
     run_id = None
     if settings.rate_limit_enabled:
-        run_id, reason = store.reserve(*identity, settings)
+        run_id, reason = store.reserve_run(*identity, settings)
         if reason:
-            raise _refuse(reason)
+            raise refuse(reason)
 
     try:
         await guard(req.topic, *(req.steps or []))
@@ -89,7 +84,7 @@ async def start_research(
         spent, failed = 0.0, False
         try:
             async for event in run_research(
-                req.topic, req.depth, settings=settings, steps=req.steps
+                req.topic, DEPTH, settings=settings, steps=req.steps
             ):
                 if event["type"] in ("usage", "done"):
                     spent = event["spent_usd"]
@@ -97,6 +92,7 @@ async def start_research(
                 yield {"event": event["type"], "data": json.dumps(event)}
         finally:
             if run_id:
-                store.finish(run_id, spent, refund=failed)
+                refund = failed and spent < settings.refund_max_spend_usd
+                store.finish(run_id, spent, refund=refund)
 
     return EventSourceResponse(events())

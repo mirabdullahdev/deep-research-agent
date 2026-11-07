@@ -27,11 +27,22 @@ def _counts(usage: dict) -> tuple[int, int, int, int]:
 
 
 class OpenAILLM:
-    def __init__(self, model: str, api_key: str, budget: Budget, effort: str = "low"):
+    def __init__(
+        self,
+        model: str,
+        api_key: str,
+        budget: Budget,
+        effort: str = "low",
+        max_tokens: int | None = None,
+    ):
         self.model = model
         self.budget = budget
         self.client = ChatOpenAI(
-            model=model, api_key=api_key, reasoning_effort=effort, max_retries=3
+            model=model,
+            api_key=api_key,
+            reasoning_effort=effort,
+            max_retries=3,
+            max_tokens=max_tokens,
         )
 
     async def structured(self, schema: type[T], system: str, user: str) -> T:

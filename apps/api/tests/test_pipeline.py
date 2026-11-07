@@ -5,6 +5,7 @@ import pytest
 from app.agents.budget import Budget
 from app.agents.deps import Deps
 from app.agents.depth import DEPTHS
+from app.agents.errors import GENERIC_ERROR
 from app.agents.runner import run_research
 from app.agents.schemas import Extraction, Gaps, Plan, RawFinding, SearchItem
 from app.agents.search import Source
@@ -147,3 +148,40 @@ def test_plain_replaces_dashes_but_keeps_ranges():
 
 def test_strip_citations_removes_all_markers():
     assert strip_citations("Fact [1]. More [2][5] text.") == "Fact. More text."
+
+
+class BoomLLM(FakeLLM):
+    async def structured(self, schema, system, user):
+        raise RuntimeError("secret detail sk-live-123")
+
+
+async def test_internal_errors_are_not_shown_to_the_user():
+    events = await collect("X", "quick", BoomLLM(), FakeSearch())
+    assert events[-1]["type"] == "error"
+    assert events[-1]["detail"] == GENERIC_ERROR
+    assert "secret" not in str(events)
+
+
+async def test_user_facing_errors_keep_their_message():
+    class EmptySearch:
+        async def search(self, query, max_results):
+            return []
+
+    events = await collect("X", "quick", FakeLLM(), EmptySearch())
+    assert events[-1]["detail"] == "No usable sources were found for this topic."
+
+
+async def test_researchers_stop_once_the_spend_cap_is_reached():
+    search = FakeSearch()
+
+    def factory(settings, depth, emit):
+        budget = Budget(cap_usd=0.05)
+        budget.spent_usd = 0.05
+        return Deps(
+            planner=FakeLLM(), worker=FakeLLM(), writer=FakeLLM(), search=search,
+            budget=budget, depth=DEPTHS[depth], emit=emit, gate=asyncio.Semaphore(4),
+        )
+
+    events = [e async for e in run_research("X", "quick", make_deps=factory)]
+    assert search.queries == []
+    assert events[-1]["type"] == "error"

@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useEffect, useState } from "react";
 import type { AgentState, Outcome, RunState } from "@/lib/useResearch";
 
@@ -238,11 +238,22 @@ export function ActivityCard({
         )}
       </button>
 
-      {open && (
-        <div className="border-t border-white/10 px-2 py-3 sm:px-5">
-          <SonarMap run={run} live={running} />
-        </div>
-      )}
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            key="map"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="border-t border-white/10 px-2 py-3 sm:px-5">
+              <SonarMap run={run} live={running} />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }

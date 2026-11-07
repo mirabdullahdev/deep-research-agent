@@ -19,7 +19,13 @@ class Settings(BaseSettings):
     runs_per_visitor: int = 1
     runs_per_ip_per_day: int = 3
     global_budget_usd: float = 2.0
-    trust_proxy: bool = False
+    max_concurrent_runs: int = 3
+    plans_per_ip_per_hour: int = 12
+    plans_global_per_day: int = 600
+    refund_max_spend_usd: float = 0.02
+
+    # How many reverse proxies sit in front of the API; 0 means trust the socket address only.
+    trusted_proxies: int = 0
     limits_db: str = "data/limits.db"
 
 

@@ -93,7 +93,19 @@ export default function Home() {
                   />
                 )}
 
-                {r.phase === "error" && (
+                {r.phase === "error" && r.errorCode && (
+                  <div
+                    role="status"
+                    className="rounded-[4px] border border-ink/15 bg-paper/70 p-5 backdrop-blur-md"
+                  >
+                    <p className="font-display text-lg font-semibold">
+                      {r.errorCode === "used" ? "Testing complete" : "Demo unavailable"}
+                    </p>
+                    <p className="mt-1 text-slate">{r.error}</p>
+                  </div>
+                )}
+
+                {r.phase === "error" && !r.errorCode && (
                   <div role="alert" className="rounded-[4px] border border-buoy/40 bg-buoy/[0.07] p-5">
                     <p className="font-display text-lg font-semibold">The run stopped</p>
                     <p className="mt-1 text-slate">{r.error}</p>
@@ -110,7 +122,7 @@ export default function Home() {
           )}
         </AnimatePresence>
 
-        {inThread && (running || ["report", "error", "reply"].includes(r.phase)) && (
+        {inThread && (running || ["report", "reply"].includes(r.phase) || (r.phase === "error" && !r.errorCode)) && (
           <Dock running={running} onStop={r.stop} onSubmit={r.submit} />
         )}
       </div>

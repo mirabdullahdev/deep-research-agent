@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -13,7 +14,15 @@ const tidy = (md: string) =>
     .replace(/\s+–\s+/g, ", ")
     .replace(/,\s*,/g, ",");
 
-function toMarkdown(topic: string, report: string, sources: SourceRef[]) {
+function forDisplay(md: string, streaming: boolean) {
+  const text = tidy(md);
+  if (!streaming) return text;
+  const blocks = text.replace(/\s*\[\d*$/, "").split(/\n{2,}/);
+  if (blocks[blocks.length - 1].trimStart().startsWith("|")) blocks.pop();
+  return blocks.join("\n\n");
+}
+
+function toMarkdown(report: string, sources: SourceRef[]) {
   const list = sources.map((s) => `${s.n}. [${s.title}](${s.url})`).join("\n");
   const body = tidy(report);
   return list ? `${body}\n\n## References\n\n${list}\n` : `${body}\n`;
@@ -35,29 +44,36 @@ export function ReportView({
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {
-    await navigator.clipboard.writeText(toMarkdown(topic, report, sources));
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1800);
+    try {
+      await navigator.clipboard.writeText(toMarkdown(report, sources));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {}
   };
 
   const download = () => {
     const url = URL.createObjectURL(
-      new Blob([toMarkdown(topic, report, sources)], { type: "text/markdown" }),
+      new Blob([toMarkdown(report, sources)], { type: "text/markdown" }),
     );
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${topic.slice(0, 48).replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.md`;
+    a.download = `${topic.slice(0, 48).replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "report"}.md`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
   return (
-    <article>
+    <motion.article
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+      className="rounded-[4px] bg-paper px-5 py-8 text-ink shadow-[0_30px_70px_-35px_rgba(0,0,0,0.85)] [--ink:#1c1733] [--mist:#d8d1ee] [--paper:#f3effd] [--slate:#6c6786] sm:px-10 sm:py-12"
+    >
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
           h1: ({ children }) => (
-            <h2 className="mb-6 mt-2 font-display text-3xl font-semibold leading-tight tracking-tight">
+            <h2 className="mb-6 font-display text-3xl font-semibold leading-tight tracking-tight">
               {children}
             </h2>
           ),
@@ -103,7 +119,7 @@ export function ReportView({
           ),
         }}
       >
-        {tidy(report)}
+        {forDisplay(report, streaming)}
       </ReactMarkdown>
       {streaming && <span className="cursor" aria-hidden />}
       {stopped && (
@@ -135,21 +151,21 @@ export function ReportView({
       )}
 
       {!streaming && (
-        <div className="mt-10 flex flex-wrap gap-2 text-sm">
+        <div className="mt-10 flex flex-wrap gap-2 border-t border-ink/10 pt-6 text-sm">
           <button
             onClick={copy}
-            className="rounded-[1px] border border-ink/20 px-4 py-1.5 transition-colors hover:border-ink"
+            className="rounded-[1px] border border-ink/25 px-4 py-1.5 transition-colors hover:border-ink"
           >
             {copied ? "Copied" : "Copy Markdown"}
           </button>
           <button
             onClick={download}
-            className="rounded-[1px] border border-ink/20 px-4 py-1.5 transition-colors hover:border-ink"
+            className="rounded-[1px] border border-ink/25 px-4 py-1.5 transition-colors hover:border-ink"
           >
             Download .md
           </button>
         </div>
       )}
-    </article>
+    </motion.article>
   );
 }

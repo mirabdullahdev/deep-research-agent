@@ -21,7 +21,7 @@ export function Dock({
   };
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-20 bg-gradient-to-t from-paper/80 via-paper/50 to-transparent px-6 pb-6 pt-12">
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-20 px-6 pb-6 pt-12">
       <div className="pointer-events-auto mx-auto max-w-3xl">
         {running ? (
           <div className="flex items-center justify-between gap-4 rounded-[4px] border border-ink/15 bg-paper-deep/90 backdrop-blur-md px-5 py-2.5">

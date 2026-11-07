@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { makePlan, streamResearch } from "./api";
+import { ApiError, makePlan, streamResearch } from "./api";
 import type { SearchItem, ServerEvent, SourceRef } from "./types";
 
 export type Phase = "ask" | "drafting" | "reply" | "plan" | "research" | "report" | "error";
@@ -85,6 +85,7 @@ function reduceRun(run: RunState, ev: ServerEvent): RunState {
 export function useResearch() {
   const [phase, setPhase] = useState<Phase>("ask");
   const [error, setError] = useState("");
+  const [errorCode, setErrorCode] = useState("");
   const [topic, setTopic] = useState("");
   const [plan, setPlan] = useState<string[]>([]);
   const [reply, setReply] = useState("");
@@ -101,6 +102,7 @@ export function useResearch() {
 
   const fail = useCallback((e: unknown) => {
     setError(e instanceof Error ? e.message : "Something went wrong.");
+    setErrorCode(e instanceof ApiError ? (e.code ?? "") : "");
     setPhase("error");
   }, []);
 
@@ -233,6 +235,7 @@ export function useResearch() {
   return {
     phase,
     error,
+    errorCode,
     topic,
     plan,
     reply,
