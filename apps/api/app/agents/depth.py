@@ -13,5 +13,5 @@ class DepthConfig:
 DEPTHS: dict[str, DepthConfig] = {
     "quick": DepthConfig(3, 3, 0, 0.05, 600),
     "standard": DepthConfig(5, 4, 1, 0.15, 1100),
-    "deep": DepthConfig(7, 5, 2, 0.35, 1800),
+    "deep": DepthConfig(8, 6, 3, 0.50, 2200),
 }

@@ -84,6 +84,17 @@ async def test_quick_run_streams_and_cites():
     assert events[-1]["follow_ups"] == ["What about Y?", "Who regulates X?"]
 
 
+async def test_approved_plan_skips_planning():
+    search = FakeSearch()
+    plan = [SearchItem(query="my own query", reason="user wrote it")]
+    factory = make_deps_factory(FakeLLM(), search, "quick")
+    events = [e async for e in run_research("X", "quick", make_deps=factory, searches=plan)]
+
+    assert search.queries == ["my own query"]
+    assert "planning" not in [e.get("stage") for e in events]
+    assert events[-1]["type"] == "done"
+
+
 async def test_hallucinated_source_urls_are_dropped():
     events = await collect("X", "quick", FakeLLM(), FakeSearch())
     done_counts = [e["findings"] for e in events if e["type"] == "agent" and e["event"] == "done"]
