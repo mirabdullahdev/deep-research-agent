@@ -1,4 +1,4 @@
-from app.agents import prompts
+from app.agents import prompts, usage_log
 from app.agents.budget import Budget
 from app.agents.llm import OpenAILLM
 from app.agents.schemas import Outline
@@ -10,10 +10,12 @@ FALLBACK_REPLY = "I research topics and questions on the web. What would you lik
 
 
 async def make_plan(settings: Settings, topic: str) -> tuple[list[str], str]:
-    llm = OpenAILLM(settings.worker_model, settings.openai_api_key, Budget(cap_usd=0.01), "low")
+    budget = Budget(cap_usd=0.01)
+    llm = OpenAILLM(settings.worker_model, settings.openai_api_key, budget, "low")
     result = await llm.structured(
         Outline, prompts.OUTLINE.format(n=PLAN_STEPS), f"Message: {topic}"
     )
+    usage_log.record("plan", budget, topic=topic)
     if not result.research:
         return [], plain(result.reply.strip()) or FALLBACK_REPLY
     steps = [plain(s.strip()) for s in result.steps if s.strip()]

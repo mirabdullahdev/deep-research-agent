@@ -1,6 +1,8 @@
 import asyncio
+import time
 from collections.abc import AsyncIterator
 
+from app.agents import usage_log
 from app.agents.budget import Budget
 from app.agents.deps import Deps
 from app.agents.depth import DEPTHS
@@ -33,8 +35,11 @@ async def run_research(
 ) -> AsyncIterator[dict]:
     queue: asyncio.Queue[dict | None] = asyncio.Queue()
     deps = (make_deps or build_deps)(settings, depth, queue.put_nowait)
+    started = time.monotonic()
+    status = "ok"
 
     async def work() -> None:
+        nonlocal status
         try:
             out = await _graph.ainvoke(
                 {
@@ -57,8 +62,17 @@ async def run_research(
                 }
             )
         except Exception as exc:
+            status = f"error: {exc}"
             queue.put_nowait({"type": "error", "detail": str(exc)})
         finally:
+            if make_deps is None:
+                usage_log.record(
+                    "research",
+                    deps.budget,
+                    topic=topic,
+                    seconds=round(time.monotonic() - started, 1),
+                    status=status,
+                )
             queue.put_nowait(None)
 
     task = asyncio.create_task(work())

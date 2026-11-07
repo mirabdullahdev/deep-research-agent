@@ -60,6 +60,7 @@ async def research(payload: dict, config: RunnableConfig) -> dict:
     async with deps.gate:
         try:
             sources = await deps.search.search(query, deps.depth.results_per_question)
+            deps.budget.searches += 1
             for s in sources:
                 deps.emit({"type": "source", "question": query, "url": s.url, "title": s.title})
             if not sources:
