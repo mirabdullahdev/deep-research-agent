@@ -22,7 +22,7 @@ export function PromptStep({
 
   return (
     <section>
-      <h1 className="gradient-text text-balance text-center font-display text-5xl font-semibold leading-[1.25] tracking-tight pb-[0.25em] sm:text-6xl">
+      <h1 className="gradient-text whitespace-nowrap text-center font-display text-[clamp(1.5rem,7vw,3.25rem)] font-semibold leading-[1.25] tracking-tight pb-[0.25em]">
         Deep Research Agent
       </h1>
 
