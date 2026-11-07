@@ -33,7 +33,7 @@ export function PromptStep({
           submit();
         }}
       >
-        <div className="rounded-2xl border border-ink/15 bg-white/[0.04] p-1.5 shadow-[0_18px_40px_-24px_rgba(0,0,0,0.6)] transition-colors focus-within:border-ink/40">
+        <div className="rounded-[4px] border border-ink/15 bg-paper/60 p-1.5 backdrop-blur-md shadow-[0_18px_40px_-24px_rgba(0,0,0,0.6)] transition-colors focus-within:border-ink/40">
           <label htmlFor="topic" className="sr-only">
             Research topic
           </label>
@@ -47,7 +47,7 @@ export function PromptStep({
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submit();
             }}
             placeholder="What do you want to understand?"
-            className="w-full resize-none rounded-xl bg-transparent px-4 pt-3.5 text-lg leading-relaxed outline-none placeholder:text-slate/60"
+            className="w-full resize-none rounded-[3px] bg-transparent px-4 pt-3.5 text-lg leading-relaxed outline-none placeholder:text-slate/60"
           />
           <div className="flex items-center justify-between px-4 pb-2.5 pt-1">
             <span className="font-mono text-[11px] text-slate/70">{topic.length}/300</span>
@@ -60,7 +60,7 @@ export function PromptStep({
         <button
           type="submit"
           disabled={!valid}
-          className="mt-6 inline-flex items-center gap-3 rounded-full bg-buoy px-7 py-3.5 font-medium text-white transition-all hover:bg-[#e84d22] hover:shadow-[0_10px_30px_-10px_rgba(255,91,46,0.7)] disabled:cursor-not-allowed disabled:bg-mist disabled:text-slate disabled:shadow-none"
+          className="mt-6 inline-flex items-center gap-3 rounded-[1px] bg-buoy px-7 py-3.5 font-medium text-white transition-all hover:bg-[#e84d22] hover:shadow-[0_10px_30px_-10px_rgba(255,91,46,0.7)] disabled:cursor-not-allowed disabled:bg-mist disabled:text-slate disabled:shadow-none"
         >
           Plan this research
           <span aria-hidden>→</span>

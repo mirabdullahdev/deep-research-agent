@@ -34,7 +34,7 @@ export function PlanCard({
     rows.length > 0 && rows.every((r) => r.text.trim().length >= 3 && r.text.trim().length <= 200);
 
   return (
-    <section className="rounded-2xl border border-ink/10 bg-white/[0.03]">
+    <section className="rounded-[4px] border border-ink/10 bg-paper text-ink [--ink:#1c1733] [--mist:#d8d1ee] [--paper:#f3effd] [--slate:#6c6786]">
       <button
         type="button"
         onClick={() => setExpanded((o) => !o)}
@@ -43,11 +43,6 @@ export function PlanCard({
         className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left disabled:cursor-default"
       >
         <span className="font-display text-lg font-semibold">Research plan</span>
-        {locked && (
-          <span aria-hidden className={`text-slate transition-transform ${open ? "rotate-180" : ""}`}>
-            ▾
-          </span>
-        )}
       </button>
 
       {open && (
@@ -75,7 +70,7 @@ export function PlanCard({
                       type="button"
                       onClick={() => remove(r.id)}
                       aria-label={`Remove step ${i + 1}`}
-                      className="h-7 w-7 shrink-0 rounded-full text-slate transition-colors hover:bg-ink/5 hover:text-buoy"
+                      className="h-7 w-7 shrink-0 rounded-[1px] text-slate transition-colors hover:bg-ink/5 hover:text-buoy"
                     >
                       <span aria-hidden className="text-lg leading-none">
                         ×

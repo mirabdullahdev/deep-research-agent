@@ -3,7 +3,6 @@
 import { AnimatePresence, MotionConfig, motion } from "framer-motion";
 import { useEffect } from "react";
 import { ActivityCard } from "@/components/ActivityCard";
-import { Contours } from "@/components/Contours";
 import { Dock } from "@/components/Dock";
 import { PlanCard } from "@/components/PlanCard";
 import { PromptStep } from "@/components/PromptStep";
@@ -36,7 +35,6 @@ export default function Home() {
   return (
     <MotionConfig reducedMotion="user">
       <div className="relative min-h-screen overflow-x-clip">
-        <Contours className="absolute -right-48 -top-40 w-[1100px] text-kelp/25 sm:-right-24" />
 
         <AnimatePresence mode="wait">
           {!inThread ? (
@@ -57,7 +55,7 @@ export default function Home() {
               className="relative z-10 mx-auto max-w-3xl px-6 pb-40 pt-10"
             >
               <div className="flex justify-end">
-                <p className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl bg-white/[0.07] px-5 py-3 text-[16.5px] leading-relaxed">
+                <p className="max-w-[85%] whitespace-pre-wrap break-words rounded-[4px] bg-paper/70 backdrop-blur-md px-5 py-3 text-[16.5px] leading-relaxed">
                   {r.topic}
                 </p>
               </div>
@@ -92,12 +90,12 @@ export default function Home() {
                 )}
 
                 {r.phase === "error" && (
-                  <div role="alert" className="rounded-2xl border border-buoy/40 bg-buoy/[0.07] p-5">
+                  <div role="alert" className="rounded-[4px] border border-buoy/40 bg-buoy/[0.07] p-5">
                     <p className="font-display text-lg font-semibold">The run stopped</p>
                     <p className="mt-1 text-slate">{r.error}</p>
                     <button
                       onClick={r.retry}
-                      className="mt-4 rounded-full bg-ink px-5 py-2 text-sm text-paper transition-colors hover:bg-buoy hover:text-white"
+                      className="mt-4 rounded-[1px] bg-ink px-5 py-2 text-sm text-paper transition-colors hover:bg-buoy hover:text-white"
                     >
                       Try again
                     </button>

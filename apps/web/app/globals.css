@@ -37,6 +37,16 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(rgba(8, 8, 12, 0.4), rgba(8, 8, 12, 0.4)),
+    url("/bg.webp") center / cover no-repeat;
+}
+
 ::selection {
   background: var(--buoy);
   color: white;

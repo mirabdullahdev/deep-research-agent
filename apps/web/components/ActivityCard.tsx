@@ -160,11 +160,26 @@ function useElapsed(running: boolean, since: number) {
 
 const clock = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
-const STAGE_LABEL = {
-  planning: "Planning the research",
-  searching: "Searching and reading",
-  reflecting: "Checking for gaps",
-  writing: "Writing the report",
+const LABELS = {
+  planning: ["Planning the research", "Charting a course", "Scoping the question"],
+  searching: [
+    "Searching and reading",
+    "Scouring sources",
+    "Following leads",
+    "Mapping the landscape",
+    "Chasing citations",
+    "Digging deeper",
+    "Sifting signal from noise",
+  ],
+  reflecting: [
+    "Checking for gaps",
+    "Cross-referencing",
+    "Triangulating",
+    "Weighing the evidence",
+    "Pressure-testing claims",
+    "Reconciling sources",
+  ],
+  writing: ["Writing the report", "Synthesizing", "Connecting the dots", "Distilling findings"],
 };
 
 export function ActivityCard({
@@ -184,14 +199,15 @@ export function ActivityCard({
   const open = choice ?? !reportStarted;
   const seconds = useElapsed(running, run.startedAt);
 
+  const pool = LABELS[run.stage];
   const title = running
-    ? STAGE_LABEL[run.stage]
+    ? pool[Math.floor(seconds / 3) % pool.length]
     : stopped
       ? "Research stopped"
       : `Researched for ${outcome ? Math.round(outcome.elapsedMs / 1000) : seconds}s`;
 
   return (
-    <section className="overflow-hidden rounded-2xl bg-abyss text-[#dbe8f0] ring-1 ring-white/10">
+    <section className="overflow-hidden rounded-[4px] bg-abyss text-[#dbe8f0] ring-1 ring-white/10">
       <button
         type="button"
         onClick={() => setChoice(!open)}
@@ -207,14 +223,19 @@ export function ActivityCard({
           ) : (
             <span className="text-[#4fd1c5]">{stopped ? "■" : "✓"}</span>
           )}
-          <span className="font-display text-base font-medium">{title}</span>
+          <motion.span
+            key={title}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="font-display text-base font-medium"
+          >
+            {title}
+          </motion.span>
         </span>
-        <span className="flex items-center gap-4 font-mono text-[11px] text-white/55">
-          {running && <span>{clock(seconds)}</span>}
-          <span aria-hidden className={`transition-transform ${open ? "rotate-180" : ""}`}>
-            ▾
-          </span>
-        </span>
+        {running && (
+          <span className="font-mono text-[12px] text-[#4ade80]">{clock(seconds)}</span>
+        )}
       </button>
 
       {open && (

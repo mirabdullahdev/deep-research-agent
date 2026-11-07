@@ -107,13 +107,13 @@ export function ReportView({
         <div className="mt-6 flex flex-wrap gap-2 text-sm">
           <button
             onClick={copy}
-            className="rounded-full border border-ink/20 px-4 py-1.5 transition-colors hover:border-ink"
+            className="rounded-[1px] border border-ink/20 px-4 py-1.5 transition-colors hover:border-ink"
           >
             {copied ? "Copied" : "Copy Markdown"}
           </button>
           <button
             onClick={download}
-            className="rounded-full border border-ink/20 px-4 py-1.5 transition-colors hover:border-ink"
+            className="rounded-[1px] border border-ink/20 px-4 py-1.5 transition-colors hover:border-ink"
           >
             Download .md
           </button>
