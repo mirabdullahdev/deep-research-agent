@@ -15,8 +15,12 @@ class Settings(BaseSettings):
 
     cors_origins: list[str] = ["http://localhost:3000"]
 
-    runs_per_ip_per_day: int = 2
-    daily_budget_usd: float = 1.0
+    rate_limit_enabled: bool = True
+    runs_per_visitor: int = 1
+    runs_per_ip_per_day: int = 3
+    global_budget_usd: float = 2.0
+    trust_proxy: bool = False
+    limits_db: str = "data/limits.db"
 
 
 @lru_cache

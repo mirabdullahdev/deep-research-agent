@@ -1,7 +1,7 @@
 import json
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, model_validator
 from sse_starlette.sse import EventSourceResponse
 
@@ -9,11 +9,15 @@ from app.agents import intake
 from app.agents.runner import run_research
 from app.config import Settings, get_settings
 from app.guard import Guard, get_guard
+from app.limits import MESSAGES, LimitStore, get_identity, get_store
 
 router = APIRouter(tags=["research"])
 
 Depth = Literal["quick", "standard", "deep"]
 MAX_STEPS = 7
+
+Identity = Annotated[tuple[str, str], Depends(get_identity)]
+Store = Annotated[LimitStore, Depends(get_store)]
 
 
 class PlanIn(BaseModel):
@@ -41,12 +45,20 @@ class RunIn(PlanIn):
         return self
 
 
+def _refuse(reason: str) -> HTTPException:
+    return HTTPException(429, MESSAGES[reason])
+
+
 @router.post("/plan", response_model=PlanOut)
 async def plan(
     req: PlanIn,
     settings: Annotated[Settings, Depends(get_settings)],
     guard: Annotated[Guard, Depends(get_guard)],
+    store: Store,
+    identity: Identity,
 ):
+    if settings.rate_limit_enabled and (reason := store.refusal(*identity, settings)):
+        raise _refuse(reason)
     await guard(req.topic)
     steps, reply = await intake.make_plan(settings, req.topic)
     return PlanOut(steps=steps, reply=reply)
@@ -57,13 +69,34 @@ async def start_research(
     req: RunIn,
     settings: Annotated[Settings, Depends(get_settings)],
     guard: Annotated[Guard, Depends(get_guard)],
+    store: Store,
+    identity: Identity,
 ):
-    await guard(req.topic, *(req.steps or []))
+    run_id = None
+    if settings.rate_limit_enabled:
+        run_id, reason = store.reserve(*identity, settings)
+        if reason:
+            raise _refuse(reason)
+
+    try:
+        await guard(req.topic, *(req.steps or []))
+    except HTTPException:
+        if run_id:
+            store.finish(run_id, 0.0, refund=True)
+        raise
 
     async def events():
-        async for event in run_research(
-            req.topic, req.depth, settings=settings, steps=req.steps
-        ):
-            yield {"event": event["type"], "data": json.dumps(event)}
+        spent, failed = 0.0, False
+        try:
+            async for event in run_research(
+                req.topic, req.depth, settings=settings, steps=req.steps
+            ):
+                if event["type"] in ("usage", "done"):
+                    spent = event["spent_usd"]
+                failed = failed or event["type"] == "error"
+                yield {"event": event["type"], "data": json.dumps(event)}
+        finally:
+            if run_id:
+                store.finish(run_id, spent, refund=failed)
 
     return EventSourceResponse(events())

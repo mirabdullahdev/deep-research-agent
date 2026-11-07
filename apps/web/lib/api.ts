@@ -1,6 +1,9 @@
 import type { ServerEvent } from "./types";
+import { visitorId } from "./visitor";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+const headers = () => ({ "Content-Type": "application/json", "X-Visitor-Id": visitorId() });
 
 async function toError(res: Response): Promise<Error> {
   try {
@@ -18,7 +21,7 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   try {
     res = await fetch(`${BASE}${path}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: headers(),
       body: JSON.stringify(body),
     });
   } catch {
@@ -43,7 +46,7 @@ export async function* streamResearch(
   try {
     res = await fetch(`${BASE}/api/research`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: headers(),
       body: JSON.stringify(body),
       signal,
     });
