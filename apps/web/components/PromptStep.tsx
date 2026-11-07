@@ -2,12 +2,6 @@
 
 import { useState } from "react";
 
-const EXAMPLES = [
-  "How close are solid-state batteries to reaching consumers?",
-  "What actually causes inflation to come back after a rate cut?",
-  "Is intermittent fasting backed by good evidence?",
-];
-
 export function PromptStep({
   initial = "",
   onSubmit,
@@ -67,19 +61,6 @@ export function PromptStep({
         </button>
       </form>
 
-      <ul className="mt-12 space-y-1.5">
-        {EXAMPLES.map((ex) => (
-          <li key={ex}>
-            <button
-              type="button"
-              onClick={() => setTopic(ex)}
-              className="text-left text-ink/80 underline decoration-mist decoration-2 underline-offset-4 transition-colors hover:text-buoy hover:decoration-buoy"
-            >
-              {ex}
-            </button>
-          </li>
-        ))}
-      </ul>
     </section>
   );
 }
