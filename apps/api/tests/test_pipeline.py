@@ -6,7 +6,7 @@ from app.agents.budget import Budget
 from app.agents.deps import Deps
 from app.agents.depth import DEPTHS
 from app.agents.runner import run_research
-from app.agents.schemas import Extraction, Gaps, Plan, RawFinding
+from app.agents.schemas import Extraction, Gaps, Plan, RawFinding, SearchItem
 from app.agents.search import Source
 
 
@@ -16,7 +16,8 @@ class FakeLLM:
 
     async def structured(self, schema, system, user):
         if schema is Plan:
-            return Plan(questions=["What is X?", "Who uses X?", "Risks of X?", "extra"])
+            queries = ["what is X", "who uses X", "X risks", "extra query"]
+            return Plan(searches=[SearchItem(query=q, reason="covers an angle") for q in queries])
         if schema is Extraction:
             url = user.split("URL: ")[1].split("\n")[0]
             return Extraction(
@@ -26,11 +27,17 @@ class FakeLLM:
                 ]
             )
         if schema is Gaps:
-            return Gaps(follow_ups=self.gaps.pop(0) if self.gaps else [])
+            batch = self.gaps.pop(0) if self.gaps else []
+            return Gaps(follow_ups=[SearchItem(query=q, reason="fills a gap") for q in batch])
         raise AssertionError(schema)
 
     async def stream(self, system, user):
-        for chunk in ["X is growing fast [1]. ", "It has risks [2][9]."]:
+        chunks = [
+            "X is growing fast [1]. ",
+            "It has risks [2][9].\n\n## Follow-up questions\n",
+            "- What about Y?\n- Who regulates X?\n",
+        ]
+        for chunk in chunks:
             yield chunk
 
 
@@ -73,6 +80,8 @@ async def test_quick_run_streams_and_cites():
     sources = next(e for e in events if e["type"] == "sources")["sources"]
     assert [s["n"] for s in sources] == [1, 2]
     assert events[-1]["report"].startswith("X is growing fast")
+    assert "Follow-up" not in events[-1]["report"]
+    assert events[-1]["follow_ups"] == ["What about Y?", "Who regulates X?"]
 
 
 async def test_hallucinated_source_urls_are_dropped():

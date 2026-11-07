@@ -11,6 +11,7 @@ class Settings(BaseSettings):
 
     planner_model: str = "gpt-5"
     worker_model: str = "gpt-5-mini"
+    writer_model: str = "gpt-5"
 
     cors_origins: list[str] = ["http://localhost:3000"]
 

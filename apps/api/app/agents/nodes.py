@@ -7,16 +7,19 @@ from langgraph.types import Send
 
 from app.agents import prompts
 from app.agents.deps import Deps
-from app.agents.schemas import Extraction, Finding, Gaps, Plan
+from app.agents.schemas import Extraction, Finding, Gaps, Plan, SearchItem
+
+FOLLOW_UP_HEADING = "## Follow-up questions"
 
 
 class State(TypedDict):
     topic: str
-    questions: list[str]
+    searches: list[SearchItem]
     asked: Annotated[list[str], add]
     findings: Annotated[list[Finding], add]
     round: int
     report: str
+    follow_ups: list[str]
 
 
 def _deps(config: RunnableConfig) -> Deps:
@@ -36,64 +39,61 @@ async def plan(state: State, config: RunnableConfig) -> dict:
         prompts.PLANNER.format(n=deps.depth.questions),
         f"Topic: {state['topic']}",
     )
-    questions = [q.strip() for q in result.questions if q.strip()][: deps.depth.questions]
-    deps.emit({"type": "plan", "questions": questions})
+    searches = [s for s in result.searches if s.query.strip()][: deps.depth.questions]
+    deps.emit({"type": "plan", "searches": [s.model_dump() for s in searches]})
     deps.emit(_usage(deps))
-    return {"questions": questions, "round": 0}
+    return {"searches": searches, "round": 0}
 
 
 def fan_out(state: State) -> list[Send]:
     return [
-        Send("research", {"topic": state["topic"], "question": q}) for q in state["questions"]
+        Send("research", {"topic": state["topic"], "search": s}) for s in state["searches"]
     ]
 
 
 async def research(payload: dict, config: RunnableConfig) -> dict:
     deps = _deps(config)
-    question = payload["question"]
-    deps.emit({"type": "agent", "event": "start", "question": question})
+    item: SearchItem = payload["search"]
+    query = item.query
+    deps.emit({"type": "agent", "event": "start", "question": query, "reason": item.reason})
 
     async with deps.gate:
         try:
-            sources = await deps.search.search(question, deps.depth.results_per_question)
+            sources = await deps.search.search(query, deps.depth.results_per_question)
             for s in sources:
-                deps.emit({"type": "source", "question": question, "url": s.url, "title": s.title})
+                deps.emit({"type": "source", "question": query, "url": s.url, "title": s.title})
             if not sources:
-                deps.emit({"type": "agent", "event": "done", "question": question, "findings": 0})
-                return {"asked": [question], "findings": []}
+                deps.emit({"type": "agent", "event": "done", "question": query, "findings": 0})
+                return {"asked": [query], "findings": []}
 
-            deps.emit({"type": "agent", "event": "reading", "question": question})
+            deps.emit({"type": "agent", "event": "reading", "question": query})
             by_url = {s.url: s for s in sources}
             blocks = "\n\n".join(f"URL: {s.url}\nTitle: {s.title}\n{s.text}" for s in sources)
             result = await deps.worker.structured(
                 Extraction,
                 prompts.EXTRACTOR.format(n=6),
-                f"Topic: {payload['topic']}\nQuestion: {question}\n\nSources:\n{blocks}",
+                f"Topic: {payload['topic']}\nSearch: {query}\nWhy it matters: {item.reason}"
+                f"\n\nSources:\n{blocks}",
             )
         except Exception as exc:
-            deps.emit({"type": "agent", "event": "error", "question": question, "detail": str(exc)})
-            return {"asked": [question], "findings": []}
+            deps.emit({"type": "agent", "event": "error", "question": query, "detail": str(exc)})
+            return {"asked": [query], "findings": []}
 
     findings = [
-        Finding(
-            question=question,
-            claim=f.claim,
-            url=f.source_url,
-            title=by_url[f.source_url].title,
-        )
+        Finding(question=query, claim=f.claim, url=f.source_url, title=by_url[f.source_url].title)
         for f in result.findings
         if f.source_url in by_url
     ]
-    deps.emit({"type": "agent", "event": "done", "question": question, "findings": len(findings)})
+    deps.emit({"type": "agent", "event": "done", "question": query, "findings": len(findings)})
     deps.emit(_usage(deps))
-    return {"asked": [question], "findings": findings}
+    return {"asked": [query], "findings": findings}
 
 
 async def reflect(state: State, config: RunnableConfig) -> dict:
     deps = _deps(config)
     round_no = state["round"] + 1
     if round_no > deps.depth.reflection_rounds or not deps.budget.can_afford_another_round():
-        return {"questions": [], "round": round_no}
+        return {"searches": [], "round": round_no}
 
     deps.emit({"type": "stage", "stage": "reflecting"})
     notes = "\n".join(f"- ({f.question}) {f.claim}" for f in state["findings"])
@@ -101,19 +101,25 @@ async def reflect(state: State, config: RunnableConfig) -> dict:
     result = await deps.worker.structured(
         Gaps,
         prompts.REFLECTOR.format(n=3),
-        f"Topic: {state['topic']}\n\nAlready asked:\n{asked}\n\nFindings so far:\n{notes}",
+        f"Topic: {state['topic']}\n\nAlready run:\n{asked}\n\nFindings so far:\n{notes}",
     )
-    fresh = [q.strip() for q in result.follow_ups if q.strip() and q not in state["asked"]]
+    fresh = [s for s in result.follow_ups if s.query.strip() and s.query not in state["asked"]]
     follow_ups = fresh[:3]
-    deps.emit({"type": "gaps", "questions": follow_ups})
+    deps.emit({"type": "gaps", "searches": [s.model_dump() for s in follow_ups]})
     deps.emit(_usage(deps))
-    return {"questions": follow_ups, "round": round_no}
+    return {"searches": follow_ups, "round": round_no}
 
 
 def after_reflect(state: State) -> list[Send] | str:
-    if state["questions"]:
+    if state["searches"]:
         return fan_out(state)
     return "write"
+
+
+def split_follow_ups(text: str) -> tuple[str, list[str]]:
+    body, _, tail = text.partition(FOLLOW_UP_HEADING)
+    items = [re.sub(r"^[-*\d.\s]+|(\s*\[\d+\])+\s*$", "", ln).strip() for ln in tail.splitlines()]
+    return body.strip(), [i for i in items if i]
 
 
 async def write(state: State, config: RunnableConfig) -> dict:
@@ -135,11 +141,12 @@ async def write(state: State, config: RunnableConfig) -> dict:
 
     parts: list[str] = []
     async for delta in deps.writer.stream(
-        prompts.WRITER, f"Topic: {state['topic']}\n\nFindings:\n\n{notes}"
+        prompts.WRITER.format(words=deps.depth.report_words),
+        f"Topic: {state['topic']}\n\nFindings:\n\n{notes}",
     ):
         parts.append(delta)
         deps.emit({"type": "report", "delta": delta})
-    body = "".join(parts).strip()
+    body, follow_ups = split_follow_ups("".join(parts))
 
     cited = sorted({int(n) for n in re.findall(r"\[(\d+)\]", body)})
     by_number = {n: url for url, n in numbering.items()}
@@ -149,5 +156,6 @@ async def write(state: State, config: RunnableConfig) -> dict:
         if n in by_number
     ]
     deps.emit({"type": "sources", "sources": sources})
+    deps.emit({"type": "followups", "questions": follow_ups})
     deps.emit(_usage(deps))
-    return {"report": body}
+    return {"report": body, "follow_ups": follow_ups}

@@ -1,8 +1,13 @@
 from pydantic import BaseModel
 
 
+class SearchItem(BaseModel):
+    query: str
+    reason: str
+
+
 class Plan(BaseModel):
-    questions: list[str]
+    searches: list[SearchItem]
 
 
 class RawFinding(BaseModel):
@@ -15,7 +20,7 @@ class Extraction(BaseModel):
 
 
 class Gaps(BaseModel):
-    follow_ups: list[str]
+    follow_ups: list[SearchItem]
 
 
 class Finding(BaseModel):
