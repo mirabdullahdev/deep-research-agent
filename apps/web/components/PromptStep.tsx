@@ -46,21 +46,30 @@ export function PromptStep({
             placeholder="What do you want to understand?"
             className="w-full resize-none rounded-[3px] bg-transparent px-4 pt-3.5 text-lg leading-relaxed outline-none placeholder:text-slate/60"
           />
-          <div className="px-4 pb-2.5 pt-1">
-            <span className="font-mono text-[11px] text-slate/70">{topic.length}/300</span>
+          <div className="flex items-center justify-between px-3 pb-1.5 pt-1">
+            <span className="pl-1 font-mono text-[11px] text-slate/70">{topic.length}/300</span>
+            <button
+              type="submit"
+              disabled={!valid}
+              aria-label="Send"
+              className="grid h-10 w-10 place-items-center rounded-full bg-buoy text-white transition-colors hover:bg-[#e84d22] disabled:cursor-not-allowed disabled:bg-buoy/35"
+            >
+              <svg
+                aria-hidden
+                viewBox="0 0 24 24"
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M12 19V5M5 12l7-7 7 7" />
+              </svg>
+            </button>
           </div>
         </div>
-
-        <button
-          type="submit"
-          disabled={!valid}
-          className="mt-6 inline-flex items-center gap-3 rounded-[1px] bg-buoy px-7 py-3.5 font-medium text-white transition-all hover:bg-[#e84d22] hover:shadow-[0_10px_30px_-10px_rgba(255,91,46,0.7)] disabled:cursor-not-allowed disabled:bg-mist disabled:text-slate disabled:shadow-none"
-        >
-          Plan this research
-          <span aria-hidden>→</span>
-        </button>
       </form>
-
     </section>
   );
 }
