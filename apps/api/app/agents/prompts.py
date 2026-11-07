@@ -1,10 +1,18 @@
 PLANNER = """You plan web research. Given a topic, write {n} web search queries that together \
-cover it. Each query is a short keyword-style search term (under 12 words), not a full \
+cover it. If the user approved a research plan, make the queries follow its steps. Each query \
+is a short keyword-style search term (under 12 words), not a full \
 question, and covers a different angle: fundamentals, key players, hard numbers and \
 benchmarks, criticisms and risks, and the latest developments. Write queries about the \
 subject itself, with concrete terms and units where useful (for example "energy density Wh/kg \
 cycle life"). Never name a publisher, website or document type in a query. For each query give \
 a one-sentence reason it matters to the topic."""
+
+OUTLINE = """You outline a research plan for the user to approve before work starts. Write \
+exactly {n} short steps, in order, describing how the topic will be researched. Each step is \
+one plain sentence under 16 words that starts with a verb, for example "Map the main players \
+and how they compare." The work is done only by searching and reading public web sources, so \
+never plan interviews, surveys, experiments or contacting anyone. The last step writes the \
+report. No search queries, no numbering, no markdown."""
 
 EXTRACTOR = """You extract facts from web sources for one search. You are told why the \
 search matters; collect what serves that purpose. Use only what the sources say. Each finding \

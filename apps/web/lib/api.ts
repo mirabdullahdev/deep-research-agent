@@ -1,4 +1,4 @@
-import type { Depth, SearchItem, ServerEvent } from "./types";
+import type { ServerEvent } from "./types";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -28,13 +28,11 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   return res.json();
 }
 
-export const makePlan = (topic: string, depth: Depth) =>
-  post<{ searches: SearchItem[] }>("/api/plan", { topic, depth });
+export const makePlan = (topic: string) => post<{ steps: string[] }>("/api/plan", { topic });
 
 export interface RunRequest {
   topic: string;
-  depth: Depth;
-  searches: SearchItem[];
+  steps: string[];
 }
 
 export async function* streamResearch(

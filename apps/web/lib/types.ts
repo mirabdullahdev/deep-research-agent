@@ -1,5 +1,3 @@
-export type Depth = "quick" | "standard" | "deep";
-
 export interface SearchItem {
   query: string;
   reason: string;

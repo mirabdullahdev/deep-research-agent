@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { DEPTHS } from "@/lib/depths";
-import type { Depth } from "@/lib/types";
 
 const EXAMPLES = [
   "How close are solid-state batteries to reaching consumers?",
@@ -10,35 +8,21 @@ const EXAMPLES = [
   "Is intermittent fasting backed by good evidence?",
 ];
 
-function Gauge({ filled }: { filled: number }) {
-  return (
-    <span aria-hidden className="flex flex-col gap-[3px]">
-      {[0, 1, 2].map((i) => (
-        <span
-          key={i}
-          className={`h-[3px] rounded-full ${i < filled ? "w-6 bg-buoy" : "w-6 bg-mist"}`}
-        />
-      ))}
-    </span>
-  );
-}
-
 export function PromptStep({
   initial = "",
   onSubmit,
 }: {
   initial?: string;
-  onSubmit: (topic: string, depth: Depth) => void;
+  onSubmit: (topic: string) => void;
 }) {
   const [topic, setTopic] = useState(initial);
-  const [depth, setDepth] = useState<Depth>("standard");
   const valid = topic.trim().length >= 3;
 
-  const submit = () => valid && onSubmit(topic.trim(), depth);
+  const submit = () => valid && onSubmit(topic.trim());
 
   return (
     <section>
-      <h1 className="gradient-text text-balance text-center font-display text-5xl pb-[0.25em] font-semibold leading-[1.25] tracking-tight sm:text-6xl">
+      <h1 className="gradient-text text-balance text-center font-display text-5xl font-semibold leading-[1.25] tracking-tight pb-[0.25em] sm:text-6xl">
         Deep Research Agent
       </h1>
 
@@ -73,76 +57,29 @@ export function PromptStep({
           </div>
         </div>
 
-        <fieldset className="mt-6">
-          <legend className="sr-only">Depth</legend>
-          <div className="grid gap-3 sm:grid-cols-3">
-            {(Object.keys(DEPTHS) as Depth[]).map((key, i) => {
-              const d = DEPTHS[key];
-              const selected = depth === key;
-              return (
-                <label
-                  key={key}
-                  className={`group cursor-pointer rounded-xl border p-4 transition-all duration-300 ${
-                    selected
-                      ? "border-ink bg-ink text-paper"
-                      : "border-ink/15 bg-white/[0.03] hover:border-ink/40"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="depth"
-                    value={key}
-                    checked={selected}
-                    onChange={() => setDepth(key)}
-                    className="sr-only"
-                  />
-                  <span className="flex items-start justify-between">
-                    <span className="font-display text-xl font-semibold">{d.label}</span>
-                    <Gauge filled={i + 1} />
-                  </span>
-                  <span
-                    className={`mt-1 block text-sm ${selected ? "text-paper/70" : "text-slate"}`}
-                  >
-                    {d.blurb}
-                  </span>
-                  <span
-                    className={`mt-3 block font-mono text-[11px] ${
-                      selected ? "text-buoy" : "text-kelp"
-                    }`}
-                  >
-                    {d.searches} searches · {d.time}
-                  </span>
-                </label>
-              );
-            })}
-          </div>
-        </fieldset>
-
         <button
           type="submit"
           disabled={!valid}
-          className="mt-8 inline-flex items-center gap-3 rounded-full bg-buoy px-7 py-3.5 font-medium text-white transition-all hover:bg-[#e84d22] hover:shadow-[0_10px_30px_-10px_rgba(255,91,46,0.7)] disabled:cursor-not-allowed disabled:bg-mist disabled:text-slate disabled:shadow-none"
+          className="mt-6 inline-flex items-center gap-3 rounded-full bg-buoy px-7 py-3.5 font-medium text-white transition-all hover:bg-[#e84d22] hover:shadow-[0_10px_30px_-10px_rgba(255,91,46,0.7)] disabled:cursor-not-allowed disabled:bg-mist disabled:text-slate disabled:shadow-none"
         >
           Plan this research
           <span aria-hidden>→</span>
         </button>
       </form>
 
-      <div className="mt-12">
-        <ul className="space-y-1.5">
-          {EXAMPLES.map((ex) => (
-            <li key={ex}>
-              <button
-                type="button"
-                onClick={() => setTopic(ex)}
-                className="text-left text-ink/80 underline decoration-mist decoration-2 underline-offset-4 transition-colors hover:text-buoy hover:decoration-buoy"
-              >
-                {ex}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
+      <ul className="mt-12 space-y-1.5">
+        {EXAMPLES.map((ex) => (
+          <li key={ex}>
+            <button
+              type="button"
+              onClick={() => setTopic(ex)}
+              className="text-left text-ink/80 underline decoration-mist decoration-2 underline-offset-4 transition-colors hover:text-buoy hover:decoration-buoy"
+            >
+              {ex}
+            </button>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

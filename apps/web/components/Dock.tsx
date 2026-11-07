@@ -25,9 +25,7 @@ export function Dock({
       <div className="pointer-events-auto mx-auto max-w-3xl">
         {running ? (
           <div className="flex items-center justify-between gap-4 rounded-full border border-ink/15 bg-paper-deep px-5 py-2.5">
-            <span className="text-sm text-slate">
-              Research is running. You can open sources and the activity log while it works.
-            </span>
+            <span className="text-sm text-slate">Researching. You can stop at any time.</span>
             <button
               type="button"
               onClick={onStop}

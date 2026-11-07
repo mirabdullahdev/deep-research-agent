@@ -10,6 +10,10 @@ class Plan(BaseModel):
     searches: list[SearchItem]
 
 
+class Outline(BaseModel):
+    steps: list[str]
+
+
 class RawFinding(BaseModel):
     claim: str
     source_url: str

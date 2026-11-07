@@ -66,12 +66,7 @@ export default function Home() {
                 {r.phase === "drafting" && <Pulse label="Drafting a research plan" />}
 
                 {r.plan.length > 0 && (
-                  <PlanCard
-                    depth={r.depth}
-                    initial={r.plan}
-                    locked={r.approved}
-                    onApprove={r.approve}
-                  />
+                  <PlanCard initial={r.plan} locked={r.approved} onApprove={r.approve} />
                 )}
 
                 {r.run && r.approved && (
@@ -92,7 +87,7 @@ export default function Home() {
                     followUps={r.followUps}
                     streaming={streaming}
                     stopped={r.stopped}
-                    onFollowUp={(q) => r.submit(q, r.depth)}
+                    onFollowUp={r.submit}
                   />
                 )}
 
@@ -114,7 +109,7 @@ export default function Home() {
         </AnimatePresence>
 
         {inThread && (
-          <Dock running={running} onStop={r.stop} onSubmit={(t) => r.submit(t, r.depth)} />
+          <Dock running={running} onStop={r.stop} onSubmit={r.submit} />
         )}
       </div>
     </MotionConfig>

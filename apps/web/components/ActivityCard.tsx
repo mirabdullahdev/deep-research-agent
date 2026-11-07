@@ -66,7 +66,6 @@ function SonarMap({ run, live }: { run: RunState; live: boolean }) {
       {run.agents.map((a) => {
         const p = place(a, run.agents);
         const active = live && (a.status === "searching" || a.status === "reading");
-        const left = p.x < CX;
         return (
           <g key={a.query}>
             {a.status !== "queued" && (
@@ -128,15 +127,6 @@ function SonarMap({ run, live }: { run: RunState; live: boolean }) {
               animate={{ scale: 1 }}
               transition={{ type: "spring", stiffness: 300, damping: 18 }}
             />
-            <text
-              x={p.x + (left ? -14 : 14)}
-              y={p.y + 4}
-              textAnchor={left ? "end" : "start"}
-              className="fill-[#9fb8c8] font-mono"
-              fontSize={10.5}
-            >
-              {a.query.length > 30 ? `${a.query.slice(0, 29)}…` : a.query}
-            </text>
           </g>
         );
       })}
@@ -170,22 +160,9 @@ function useElapsed(running: boolean, since: number) {
 
 const clock = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
-function StatusIcon({ status, live }: { status: AgentState["status"]; live: boolean }) {
-  if (status === "done") return <span className="text-[#4fd1c5]">✓</span>;
-  if (status === "error") return <span className="text-white/40">✕</span>;
-  if (status === "queued" || !live) {
-    return <span className="inline-block h-2 w-2 rounded-full border border-white/30" />;
-  }
-  return (
-    <span className="relative inline-flex h-2 w-2">
-      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-buoy opacity-60" />
-      <span className="relative inline-flex h-2 w-2 rounded-full bg-buoy" />
-    </span>
-  );
-}
-
 const STAGE_LABEL = {
-  searching: "Searching and reading sources",
+  planning: "Planning the research",
+  searching: "Searching and reading",
   reflecting: "Checking for gaps",
   writing: "Writing the report",
 };
@@ -206,7 +183,6 @@ export function ActivityCard({
   const [choice, setChoice] = useState<boolean | null>(null);
   const open = choice ?? !reportStarted;
   const seconds = useElapsed(running, run.startedAt);
-  const total = run.agents.reduce((n, a) => n + a.sources.length, 0);
 
   const title = running
     ? STAGE_LABEL[run.stage]
@@ -235,11 +211,6 @@ export function ActivityCard({
         </span>
         <span className="flex items-center gap-4 font-mono text-[11px] text-white/55">
           {running && <span>{clock(seconds)}</span>}
-          <span>{total} sources</span>
-          <span>
-            ${(outcome?.spent ?? run.spent).toFixed(3)}
-            {running && run.cap ? ` / $${run.cap.toFixed(2)}` : ""}
-          </span>
           <span aria-hidden className={`transition-transform ${open ? "rotate-180" : ""}`}>
             ▾
           </span>
@@ -247,49 +218,8 @@ export function ActivityCard({
       </button>
 
       {open && (
-        <div className="border-t border-white/10">
-          <div className="px-2 py-3 sm:px-5">
-            <SonarMap run={run} live={running} />
-          </div>
-
-          <ul className="space-y-4 border-t border-white/10 px-5 py-5">
-            {run.agents.map((a) => (
-              <li key={a.query} className="flex gap-3 text-sm">
-                <span className="mt-1.5 flex w-3 shrink-0 justify-center">
-                  <StatusIcon status={a.status} live={running} />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-start justify-between gap-3">
-                    <p className={a.status === "queued" ? "text-white/45" : "text-white/90"}>
-                      {a.query}
-                    </p>
-                    {a.status === "done" && (
-                      <span className="shrink-0 font-mono text-[11px] text-white/45">
-                        {a.findings} facts
-                      </span>
-                    )}
-                  </div>
-                  {a.sources.length > 0 && (
-                    <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
-                      {a.sources.map((s) => (
-                        <li key={s.url} className="min-w-0">
-                          <a
-                            href={s.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            title={s.title}
-                            className="block max-w-[14rem] truncate font-mono text-[11.5px] text-white/50 transition-colors hover:text-buoy"
-                          >
-                            {domain(s.url)}
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
+        <div className="border-t border-white/10 px-2 py-3 sm:px-5">
+          <SonarMap run={run} live={running} />
         </div>
       )}
     </section>

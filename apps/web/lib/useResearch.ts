@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { makePlan, streamResearch } from "./api";
-import type { Depth, SearchItem, ServerEvent, SourceRef } from "./types";
+import type { SearchItem, ServerEvent, SourceRef } from "./types";
 
 export type Phase = "ask" | "drafting" | "plan" | "research" | "report" | "error";
 
@@ -16,7 +16,7 @@ export interface AgentState {
 }
 
 export interface RunState {
-  stage: "searching" | "reflecting" | "writing";
+  stage: "planning" | "searching" | "reflecting" | "writing";
   agents: AgentState[];
   round: number;
   spent: number;
@@ -69,6 +69,8 @@ function reduceRun(run: RunState, ev: ServerEvent): RunState {
       const round = run.round + 1;
       return { ...run, round, agents: [...run.agents, ...ev.searches.map((s) => queued(s, round))] };
     }
+    case "plan":
+      return { ...run, stage: "searching", agents: ev.searches.map((s) => queued(s, 0)) };
     case "stage":
       if (ev.stage === "reflecting") return { ...run, stage: "reflecting" };
       if (ev.stage === "writing") return { ...run, stage: "writing" };
@@ -84,8 +86,7 @@ export function useResearch() {
   const [phase, setPhase] = useState<Phase>("ask");
   const [error, setError] = useState("");
   const [topic, setTopic] = useState("");
-  const [depth, setDepth] = useState<Depth>("standard");
-  const [plan, setPlan] = useState<SearchItem[]>([]);
+  const [plan, setPlan] = useState<string[]>([]);
   const [approved, setApproved] = useState(false);
   const [run, setRun] = useState<RunState | null>(null);
   const [report, setReport] = useState("");
@@ -109,11 +110,10 @@ export function useResearch() {
   };
 
   const submit = useCallback(
-    async (t: string, d: Depth) => {
+    async (t: string) => {
       abort.current?.abort();
       clearTimer();
       setTopic(t);
-      setDepth(d);
       setPlan([]);
       setApproved(false);
       setRun(null);
@@ -124,8 +124,8 @@ export function useResearch() {
       setStopped(false);
       setPhase("drafting");
       try {
-        const res = await makePlan(t, d);
-        setPlan(res.searches);
+        const res = await makePlan(t);
+        setPlan(res.steps);
         setPhase("plan");
       } catch (e) {
         fail(e);
@@ -135,7 +135,7 @@ export function useResearch() {
   );
 
   const approve = useCallback(
-    async (searches: SearchItem[]) => {
+    async (steps: string[]) => {
       const startedAt = Date.now();
       abort.current = new AbortController();
       buffer.current = "";
@@ -145,10 +145,10 @@ export function useResearch() {
       setOutcome(null);
       setStopped(false);
       setApproved(true);
-      setPlan(searches);
+      setPlan(steps);
       setRun({
-        stage: "searching",
-        agents: searches.map((s) => queued(s, 0)),
+        stage: "planning",
+        agents: [],
         round: 0,
         spent: 0,
         cap: 0,
@@ -158,7 +158,7 @@ export function useResearch() {
 
       try {
         for await (const ev of streamResearch(
-          { topic, depth, searches },
+          { topic, steps },
           abort.current.signal,
         )) {
           if (ev.type === "report") {
@@ -194,7 +194,7 @@ export function useResearch() {
         if (!abort.current?.signal.aborted) fail(e);
       }
     },
-    [topic, depth, fail],
+    [topic, fail],
   );
 
   const stop = useCallback(() => {
@@ -215,9 +215,9 @@ export function useResearch() {
       setApproved(false);
       setPhase("plan");
     } else {
-      void submit(topic, depth);
+      void submit(topic);
     }
-  }, [plan, submit, topic, depth]);
+  }, [plan, submit, topic]);
 
   const reset = useCallback(() => {
     abort.current?.abort();
@@ -233,7 +233,6 @@ export function useResearch() {
     phase,
     error,
     topic,
-    depth,
     plan,
     approved,
     run,

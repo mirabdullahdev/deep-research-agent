@@ -14,6 +14,7 @@ FOLLOW_UP_HEADING = "## Follow-up questions"
 
 class State(TypedDict):
     topic: str
+    steps: list[str]
     searches: list[SearchItem]
     asked: Annotated[list[str], add]
     findings: Annotated[list[Finding], add]
@@ -34,10 +35,12 @@ def _usage(deps: Deps) -> dict:
 async def plan(state: State, config: RunnableConfig) -> dict:
     deps = _deps(config)
     deps.emit({"type": "stage", "stage": "planning"})
+    brief = f"Topic: {state['topic']}"
+    if state["steps"]:
+        approved = "\n".join(f"- {s}" for s in state["steps"])
+        brief += f"\n\nApproved research plan:\n{approved}"
     result = await deps.planner.structured(
-        Plan,
-        prompts.PLANNER.format(n=deps.depth.questions),
-        f"Topic: {state['topic']}",
+        Plan, prompts.PLANNER.format(n=deps.depth.questions), brief
     )
     searches = [s for s in result.searches if s.query.strip()][: deps.depth.questions]
     deps.emit({"type": "plan", "searches": [s.model_dump() for s in searches]})

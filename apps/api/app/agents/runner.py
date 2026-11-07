@@ -29,7 +29,7 @@ def build_deps(settings: Settings, depth: str, emit) -> Deps:
 
 
 async def run_research(
-    topic: str, depth: str, make_deps=None, settings=None, searches=None
+    topic: str, depth: str, make_deps=None, settings=None, steps=None
 ) -> AsyncIterator[dict]:
     queue: asyncio.Queue[dict | None] = asyncio.Queue()
     deps = (make_deps or build_deps)(settings, depth, queue.put_nowait)
@@ -41,7 +41,8 @@ async def run_research(
                     "topic": topic,
                     "findings": [],
                     "asked": [],
-                    "searches": searches or [],
+                    "steps": steps or [],
+                    "searches": [],
                     "round": 0,
                 },
                 config={"configurable": {"deps": deps}, "recursion_limit": 50},

@@ -13,9 +13,11 @@ from app.agents.search import Source
 class FakeLLM:
     def __init__(self, gaps: list[list[str]] | None = None):
         self.gaps = list(gaps or [])
+        self.plan_inputs: list[str] = []
 
     async def structured(self, schema, system, user):
         if schema is Plan:
+            self.plan_inputs.append(user)
             queries = ["what is X", "who uses X", "X risks", "extra query"]
             return Plan(searches=[SearchItem(query=q, reason="covers an angle") for q in queries])
         if schema is Extraction:
@@ -84,15 +86,21 @@ async def test_quick_run_streams_and_cites():
     assert events[-1]["follow_ups"] == ["What about Y?", "Who regulates X?"]
 
 
-async def test_approved_plan_skips_planning():
-    search = FakeSearch()
-    plan = [SearchItem(query="my own query", reason="user wrote it")]
-    factory = make_deps_factory(FakeLLM(), search, "quick")
-    events = [e async for e in run_research("X", "quick", make_deps=factory, searches=plan)]
+async def test_approved_steps_reach_the_planner():
+    llm = FakeLLM()
+    steps = ["Compare pricing across providers.", "Look for regulatory risks."]
+    factory = make_deps_factory(llm, FakeSearch(), "quick")
+    events = [e async for e in run_research("X", "quick", make_deps=factory, steps=steps)]
 
-    assert search.queries == ["my own query"]
-    assert "planning" not in [e.get("stage") for e in events]
+    assert "Approved research plan" in llm.plan_inputs[0]
+    assert "Compare pricing across providers." in llm.plan_inputs[0]
     assert events[-1]["type"] == "done"
+
+
+async def test_no_steps_means_no_approved_plan_section():
+    llm = FakeLLM()
+    await collect("X", "quick", llm, FakeSearch())
+    assert "Approved research plan" not in llm.plan_inputs[0]
 
 
 async def test_hallucinated_source_urls_are_dropped():
