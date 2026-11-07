@@ -24,12 +24,10 @@ export type ServerEvent =
   | { type: "gaps"; searches: SearchItem[] }
   | { type: "report"; delta: string }
   | { type: "sources"; sources: SourceRef[] }
-  | { type: "followups"; questions: string[] }
   | { type: "usage"; spent_usd: number; cap_usd: number }
   | {
       type: "done";
       report: string;
-      follow_ups: string[];
       spent_usd: number;
       tokens_in: number;
       tokens_out: number;

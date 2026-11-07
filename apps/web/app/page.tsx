@@ -88,10 +88,8 @@ export default function Home() {
                     topic={r.topic}
                     report={r.report}
                     sources={r.sources}
-                    followUps={r.followUps}
                     streaming={streaming}
                     stopped={r.stopped}
-                    onFollowUp={r.submit}
                   />
                 )}
 

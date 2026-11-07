@@ -8,6 +8,7 @@ from app.agents.depth import DEPTHS
 from app.agents.runner import run_research
 from app.agents.schemas import Extraction, Gaps, Plan, RawFinding, SearchItem
 from app.agents.search import Source
+from app.agents.text import plain, strip_citations
 
 
 class FakeLLM:
@@ -36,8 +37,7 @@ class FakeLLM:
     async def stream(self, system, user):
         chunks = [
             "X is growing fast [1]. ",
-            "It has risks [2][9].\n\n## Follow-up questions\n",
-            "- What about Y?\n- Who regulates X?\n",
+            "It has risks [2][9] \u2014 but they are manageable.",
         ]
         for chunk in chunks:
             yield chunk
@@ -69,7 +69,7 @@ async def collect(topic, depth, llm, search):
     return [e async for e in run_research(topic, depth, make_deps=factory)]
 
 
-async def test_quick_run_streams_and_cites():
+async def test_quick_run_streams_and_lists_references():
     search = FakeSearch()
     events = await collect("X", "quick", FakeLLM(), search)
     kinds = [e["type"] for e in events]
@@ -80,10 +80,12 @@ async def test_quick_run_streams_and_cites():
     assert "reflecting" not in [e.get("stage") for e in events]
 
     sources = next(e for e in events if e["type"] == "sources")["sources"]
-    assert [s["n"] for s in sources] == [1, 2]
-    assert events[-1]["report"].startswith("X is growing fast")
-    assert "Follow-up" not in events[-1]["report"]
-    assert events[-1]["follow_ups"] == ["What about Y?", "Who regulates X?"]
+    assert [s["n"] for s in sources] == [1, 2, 3]
+
+    report = events[-1]["report"]
+    assert report == "X is growing fast. It has risks, but they are manageable."
+    assert "[" not in report and "\u2014" not in report
+    assert "follow_ups" not in events[-1]
 
 
 async def test_approved_steps_reach_the_planner():
@@ -133,3 +135,15 @@ def test_budget_math():
     b.add("gpt-5-mini", 1_000_000, 1_000_000)
     assert b.spent_usd == pytest.approx(2.25)
     assert not b.can_afford_another_round()
+
+
+def test_plain_replaces_dashes_but_keeps_ranges():
+    assert plain("a \u2014 b") == "a, b"
+    assert plain("a\u2014b") == "a, b"
+    assert plain("grew 2020\u20132025") == "grew 2020\u20132025"
+    assert plain("a \u2013 b") == "a, b"
+    assert plain("x,\u2014 y") == "x, y"
+
+
+def test_strip_citations_removes_all_markers():
+    assert strip_citations("Fact [1]. More [2][5] text.") == "Fact. More text."

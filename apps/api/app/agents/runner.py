@@ -51,7 +51,6 @@ async def run_research(
                 {
                     "type": "done",
                     "report": out["report"],
-                    "follow_ups": out["follow_ups"],
                     "spent_usd": round(deps.budget.spent_usd, 4),
                     "tokens_in": deps.budget.tokens_in,
                     "tokens_out": deps.budget.tokens_out,

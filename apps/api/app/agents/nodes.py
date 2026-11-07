@@ -1,4 +1,3 @@
-import re
 from operator import add
 from typing import Annotated, TypedDict
 
@@ -8,8 +7,7 @@ from langgraph.types import Send
 from app.agents import prompts
 from app.agents.deps import Deps
 from app.agents.schemas import Extraction, Finding, Gaps, Plan, SearchItem
-
-FOLLOW_UP_HEADING = "## Follow-up questions"
+from app.agents.text import plain, strip_citations
 
 
 class State(TypedDict):
@@ -20,7 +18,6 @@ class State(TypedDict):
     findings: Annotated[list[Finding], add]
     round: int
     report: str
-    follow_ups: list[str]
 
 
 def _deps(config: RunnableConfig) -> Deps:
@@ -119,12 +116,6 @@ def after_reflect(state: State) -> list[Send] | str:
     return "write"
 
 
-def split_follow_ups(text: str) -> tuple[str, list[str]]:
-    body, _, tail = text.partition(FOLLOW_UP_HEADING)
-    items = [re.sub(r"^[-*\d.\s]+|(\s*\[\d+\])+\s*$", "", ln).strip() for ln in tail.splitlines()]
-    return body.strip(), [i for i in items if i]
-
-
 async def write(state: State, config: RunnableConfig) -> dict:
     deps = _deps(config)
     if not state["findings"]:
@@ -139,7 +130,7 @@ async def write(state: State, config: RunnableConfig) -> dict:
 
     grouped: dict[str, list[str]] = {}
     for f in state["findings"]:
-        grouped.setdefault(f.question, []).append(f"- {f.claim} [{numbering[f.url]}]")
+        grouped.setdefault(f.question, []).append(f"- {f.claim} (source: {f.title})")
     notes = "\n\n".join(f"### {q}\n" + "\n".join(lines) for q, lines in grouped.items())
 
     parts: list[str] = []
@@ -149,16 +140,9 @@ async def write(state: State, config: RunnableConfig) -> dict:
     ):
         parts.append(delta)
         deps.emit({"type": "report", "delta": delta})
-    body, follow_ups = split_follow_ups("".join(parts))
+    body = plain(strip_citations("".join(parts))).strip()
 
-    cited = sorted({int(n) for n in re.findall(r"\[(\d+)\]", body)})
-    by_number = {n: url for url, n in numbering.items()}
-    sources = [
-        {"n": n, "url": by_number[n], "title": titles[by_number[n]]}
-        for n in cited
-        if n in by_number
-    ]
+    sources = [{"n": n, "url": url, "title": titles[url]} for url, n in numbering.items()]
     deps.emit({"type": "sources", "sources": sources})
-    deps.emit({"type": "followups", "questions": follow_ups})
     deps.emit(_usage(deps))
-    return {"report": body, "follow_ups": follow_ups}
+    return {"report": body}

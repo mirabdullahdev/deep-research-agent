@@ -92,7 +92,6 @@ export function useResearch() {
   const [run, setRun] = useState<RunState | null>(null);
   const [report, setReport] = useState("");
   const [sources, setSources] = useState<SourceRef[]>([]);
-  const [followUps, setFollowUps] = useState<string[]>([]);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [stopped, setStopped] = useState(false);
 
@@ -121,7 +120,6 @@ export function useResearch() {
       setRun(null);
       setReport("");
       setSources([]);
-      setFollowUps([]);
       setOutcome(null);
       setStopped(false);
       setPhase("drafting");
@@ -148,7 +146,6 @@ export function useResearch() {
       buffer.current = "";
       setReport("");
       setSources([]);
-      setFollowUps([]);
       setOutcome(null);
       setStopped(false);
       setApproved(true);
@@ -179,12 +176,9 @@ export function useResearch() {
             }
           } else if (ev.type === "sources") {
             setSources(ev.sources);
-          } else if (ev.type === "followups") {
-            setFollowUps(ev.questions);
           } else if (ev.type === "done") {
             clearTimer();
             setReport(ev.report);
-            setFollowUps(ev.follow_ups);
             setOutcome({
               spent: ev.spent_usd,
               elapsedMs: Date.now() - startedAt,
@@ -246,7 +240,6 @@ export function useResearch() {
     run,
     report,
     sources,
-    followUps,
     outcome,
     stopped,
     submit,

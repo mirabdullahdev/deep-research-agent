@@ -6,29 +6,31 @@ import remarkGfm from "remark-gfm";
 import type { SourceRef } from "@/lib/types";
 import { domain } from "./ActivityCard";
 
-const withCitations = (md: string) => md.replace(/\[(\d+)\]/g, "[$1](#src-$1)");
+const tidy = (md: string) =>
+  md
+    .replace(/[ \t]*(?:\[\d+\])+/g, "")
+    .replace(/\s*—\s*/g, ", ")
+    .replace(/\s+–\s+/g, ", ")
+    .replace(/,\s*,/g, ",");
 
 function toMarkdown(topic: string, report: string, sources: SourceRef[]) {
   const list = sources.map((s) => `${s.n}. [${s.title}](${s.url})`).join("\n");
-  return `# ${topic}\n\n${report}\n\n## Sources\n\n${list}\n`;
+  const body = tidy(report);
+  return list ? `${body}\n\n## References\n\n${list}\n` : `${body}\n`;
 }
 
 export function ReportView({
   topic,
   report,
   sources,
-  followUps,
   streaming,
   stopped,
-  onFollowUp,
 }: {
   topic: string;
   report: string;
   sources: SourceRef[];
-  followUps: string[];
   streaming: boolean;
   stopped: boolean;
-  onFollowUp: (q: string) => void;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -55,46 +57,53 @@ export function ReportView({
         remarkPlugins={[remarkGfm]}
         components={{
           h1: ({ children }) => (
-            <h2 className="mb-3 mt-8 font-display text-2xl font-semibold tracking-tight">
+            <h2 className="mb-6 mt-2 font-display text-3xl font-semibold leading-tight tracking-tight">
               {children}
             </h2>
           ),
           h2: ({ children }) => (
-            <h3 className="mb-3 mt-10 font-display text-xl font-semibold tracking-tight">
+            <h3 className="mb-3 mt-12 border-t border-ink/10 pt-8 font-display text-xl font-semibold tracking-tight">
               {children}
             </h3>
           ),
           h3: ({ children }) => (
-            <h4 className="mb-2 mt-6 font-display text-lg font-semibold">{children}</h4>
+            <h4 className="mb-2 mt-8 font-display text-lg font-semibold">{children}</h4>
           ),
-          p: ({ children }) => <p className="my-4 text-[16.5px] leading-[1.75]">{children}</p>,
+          p: ({ children }) => <p className="my-5 text-[16.5px] leading-[1.8]">{children}</p>,
           ul: ({ children }) => (
-            <ul className="my-4 list-disc space-y-2 pl-5 text-[16.5px] leading-[1.7] marker:text-buoy">
+            <ul className="my-5 list-disc space-y-2 pl-6 text-[16.5px] leading-[1.75] marker:text-buoy">
               {children}
             </ul>
           ),
           ol: ({ children }) => (
-            <ol className="my-4 list-decimal space-y-2 pl-5 text-[16.5px] leading-[1.7]">
+            <ol className="my-5 list-decimal space-y-2 pl-6 text-[16.5px] leading-[1.75]">
               {children}
             </ol>
           ),
           strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-          a: ({ href, children }) =>
-            href?.startsWith("#src-") ? (
-              <a
-                href={href}
-                className="mx-[1px] inline-block -translate-y-[2px] rounded-[5px] bg-buoy/15 px-1.5 py-[1px] align-baseline font-mono text-[11px] font-medium text-buoy no-underline transition-colors hover:bg-buoy hover:text-white"
-              >
-                {children}
-              </a>
-            ) : (
-              <a href={href} className="underline decoration-buoy underline-offset-4">
-                {children}
-              </a>
-            ),
+          a: ({ href, children }) => (
+            <a href={href} className="underline decoration-buoy underline-offset-4">
+              {children}
+            </a>
+          ),
+          table: ({ children }) => (
+            <div className="my-6 overflow-x-auto">
+              <table className="w-full border-collapse text-left text-[15px]">{children}</table>
+            </div>
+          ),
+          th: ({ children }) => (
+            <th className="border-b border-ink/25 px-3 py-2 font-display font-semibold">
+              {children}
+            </th>
+          ),
+          td: ({ children }) => (
+            <td className="border-b border-ink/10 px-3 py-2 align-top leading-relaxed">
+              {children}
+            </td>
+          ),
         }}
       >
-        {withCitations(report)}
+        {tidy(report)}
       </ReactMarkdown>
       {streaming && <span className="cursor" aria-hidden />}
       {stopped && (
@@ -103,8 +112,30 @@ export function ReportView({
         </p>
       )}
 
+      {sources.length > 0 && (
+        <section className="mt-12 border-t border-ink/10 pt-8">
+          <h3 className="font-display text-xl font-semibold tracking-tight">References</h3>
+          <ol className="mt-5 space-y-3">
+            {sources.map((s) => (
+              <li key={s.n} className="flex gap-3 text-sm">
+                <span className="w-6 shrink-0 text-slate">{s.n}.</span>
+                <a
+                  href={s.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="min-w-0 hover:text-buoy"
+                >
+                  <span className="block font-medium leading-snug">{s.title}</span>
+                  <span className="mt-0.5 block truncate text-slate">{domain(s.url)}</span>
+                </a>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+
       {!streaming && (
-        <div className="mt-6 flex flex-wrap gap-2 text-sm">
+        <div className="mt-10 flex flex-wrap gap-2 text-sm">
           <button
             onClick={copy}
             className="rounded-[1px] border border-ink/20 px-4 py-1.5 transition-colors hover:border-ink"
@@ -118,59 +149,6 @@ export function ReportView({
             Download .md
           </button>
         </div>
-      )}
-
-      {sources.length > 0 && (
-        <section className="mt-10 border-t border-ink/10 pt-6">
-          <h3 className="font-display text-lg font-semibold">Sources</h3>
-          <ol className="mt-4 space-y-3">
-            {sources.map((s) => (
-              <li
-                key={s.n}
-                id={`src-${s.n}`}
-                className="src-target flex scroll-mt-8 gap-3 rounded-sm text-sm"
-              >
-                <span className="mt-0.5 w-5 shrink-0 font-mono text-[11px] text-buoy">{s.n}</span>
-                <a
-                  href={s.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="min-w-0 hover:text-buoy"
-                >
-                  <span className="block font-medium leading-snug">{s.title}</span>
-                  <span className="mt-0.5 block truncate font-mono text-[11px] text-slate">
-                    {domain(s.url)}
-                  </span>
-                </a>
-              </li>
-            ))}
-          </ol>
-        </section>
-      )}
-
-      {followUps.length > 0 && !streaming && (
-        <section className="mt-10 border-t border-ink/10 pt-6">
-          <h3 className="font-display text-lg font-semibold">Keep digging</h3>
-          <ul className="mt-3 space-y-2">
-            {followUps.map((q) => (
-              <li key={q}>
-                <button
-                  type="button"
-                  onClick={() => onFollowUp(q)}
-                  className="group text-left leading-snug text-ink/85 transition-colors hover:text-buoy"
-                >
-                  {q}{" "}
-                  <span
-                    aria-hidden
-                    className="inline-block transition-transform group-hover:translate-x-1"
-                  >
-                    →
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
       )}
     </article>
   );
