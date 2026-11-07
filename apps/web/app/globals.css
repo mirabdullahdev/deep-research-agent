@@ -30,6 +30,13 @@ html {
   scroll-behavior: smooth;
 }
 
+.sheet {
+  --ink: #1c1733;
+  --mist: #d4cbef;
+  --paper: #ece6fd;
+  --slate: #6c6786;
+}
+
 body {
   background: var(--paper);
   color: var(--ink);

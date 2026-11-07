@@ -35,7 +35,7 @@ export function PlanCard({
     rows.length > 0 && rows.every((r) => r.text.trim().length >= 3 && r.text.trim().length <= 200);
 
   return (
-    <section className="rounded-[4px] border border-ink/10 bg-paper text-ink [--ink:#1c1733] [--mist:#d8d1ee] [--paper:#f3effd] [--slate:#6c6786]">
+    <section className="rounded-[4px] border border-ink/10 bg-paper text-ink sheet">
       <button
         type="button"
         onClick={() => setExpanded((o) => !o)}
@@ -68,13 +68,17 @@ export function PlanCard({
                     <label htmlFor={`step${r.id}`} className="sr-only">
                       Step {i + 1}
                     </label>
-                    <input
+                    <textarea
                       id={`step${r.id}`}
                       value={r.text}
+                      rows={2}
                       maxLength={200}
-                      onChange={(e) => update(r.id, e.target.value)}
+                      onChange={(e) => update(r.id, e.target.value.replace(/\s*\n\s*/g, " "))}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") e.preventDefault();
+                      }}
                       placeholder="Describe a step"
-                      className="min-w-0 flex-1 border-0 border-b border-ink/20 bg-transparent pb-1 font-display text-base font-normal leading-relaxed outline-none transition-colors focus:border-ink"
+                      className="field-sizing-content min-w-0 flex-1 resize-none border-0 border-b border-ink/20 bg-transparent pb-1 font-display text-base font-normal leading-relaxed outline-none transition-colors focus:border-ink"
                     />
                     <button
                       type="button"

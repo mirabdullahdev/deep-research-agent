@@ -9,7 +9,7 @@ from app.agents.errors import GENERIC_ERROR
 from app.agents.runner import run_research
 from app.agents.schemas import Extraction, Gaps, Plan, RawFinding, SearchItem
 from app.agents.search import Source
-from app.agents.text import plain, strip_citations
+from app.agents.text import ensure_headings, plain, strip_citations
 
 
 class FakeLLM:
@@ -185,3 +185,39 @@ async def test_researchers_stop_once_the_spend_cap_is_reached():
 
     assert search.queries == []
     assert events[-1]["type"] == "error"
+
+
+def test_plain_text_headings_are_repaired():
+    raw = (
+        "Why Economies Cannot Print More Money: Mechanisms and Limits\n\n"
+        "Executive Summary\n"
+        "Economies cannot costlessly create money because output limits spending.\n\n"
+        "Mechanisms of Money Creation\n\n"
+        "Banks create money when they lend, and central banks add reserves."
+    )
+    fixed = ensure_headings(raw)
+    assert fixed.startswith("# Why Economies Cannot Print More Money")
+    assert "\n## Executive Summary\nEconomies cannot" in fixed
+    assert "\n## Mechanisms of Money Creation\n" in fixed
+
+
+def test_correct_markdown_is_left_untouched():
+    raw = "# Title\n\n## Executive Summary\n\nA full sentence paragraph.\n\n## Conclusion\n\nDone."
+    assert ensure_headings(raw) == raw
+
+
+def test_lists_tables_and_paragraphs_are_not_turned_into_headings():
+    raw = (
+        "# Title\n\n"
+        "- Short bullet item\n- Another bullet\n\n"
+        "1. First numbered point\n\n"
+        "| A | B |\n|---|---|\n| 1 | 2 |\n\n"
+        "This is a normal paragraph that is long enough to never look like a heading at all.\n\n"
+        "A short sentence ends with a period."
+    )
+    assert ensure_headings(raw) == raw
+
+
+def test_a_first_line_that_is_a_sentence_is_not_made_a_title():
+    raw = "The answer is short and direct.\n\nMore text follows here."
+    assert ensure_headings(raw) == raw

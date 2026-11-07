@@ -8,7 +8,7 @@ from app.agents import prompts
 from app.agents.deps import Deps
 from app.agents.errors import UserFacingError
 from app.agents.schemas import Extraction, Finding, Gaps, Plan, SearchItem
-from app.agents.text import plain, strip_citations
+from app.agents.text import ensure_headings, plain, strip_citations
 
 STREAM_CHUNK_CHARS = 24
 
@@ -154,7 +154,7 @@ async def write(state: State, config: RunnableConfig) -> dict:
             pending = ""
     if pending:
         deps.emit({"type": "report", "delta": pending})
-    body = plain(strip_citations("".join(parts))).strip()
+    body = ensure_headings(plain(strip_citations("".join(parts)))).strip()
 
     sources = [{"n": n, "url": url, "title": titles[url]} for url, n in numbering.items()]
     deps.emit({"type": "sources", "sources": sources})

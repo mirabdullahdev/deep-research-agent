@@ -61,8 +61,43 @@ const tidy = (md: string) =>
     .replace(/\s+–\s+/g, ", ")
     .replace(/,\s*,/g, ",");
 
+const looksLikeHeading = (line: string) =>
+  line.length >= 3 &&
+  line.length <= 80 &&
+  line.split(/\s+/).length <= 10 &&
+  /^[A-Z]/.test(line) &&
+  !/[.!?:;,]$/.test(line) &&
+  !/^[#>*|\-\d]/.test(line);
+
+function ensureHeadings(text: string, streaming: boolean) {
+  const lines = text.split("\n");
+  let first = true;
+  let previousBlank = true;
+  return lines
+    .map((line, i) => {
+      const trimmed = line.trim();
+      if (!trimmed) {
+        previousBlank = true;
+        return line;
+      }
+      const complete = !streaming || i < lines.length - 1;
+      let result = line;
+      if (first) {
+        first = false;
+        if (!trimmed.startsWith("#") && trimmed.length <= 160 && !/[.!?]$/.test(trimmed)) {
+          result = `# ${trimmed}`;
+        }
+      } else if (previousBlank && complete && looksLikeHeading(trimmed)) {
+        result = `## ${trimmed}`;
+      }
+      previousBlank = false;
+      return result;
+    })
+    .join("\n");
+}
+
 function forDisplay(md: string, streaming: boolean) {
-  const text = tidy(md);
+  const text = ensureHeadings(tidy(md), streaming);
   if (!streaming) return text;
   const blocks = text.replace(/\s*\[\d*$/, "").split(/\n{2,}/);
   if (blocks[blocks.length - 1].trimStart().startsWith("|")) blocks.pop();
@@ -76,7 +111,7 @@ function toMarkdown(report: string, sources: SourceRef[]) {
     .filter((s) => isWebLink(s.url))
     .map((s) => `${s.n}. [${s.title}](${s.url})`)
     .join("\n");
-  const body = tidy(report);
+  const body = ensureHeadings(tidy(report), false);
   return list ? `${body}\n\n## References\n\n${list}\n` : `${body}\n`;
 }
 
@@ -120,7 +155,7 @@ export function ReportView({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-      className="rounded-[4px] bg-paper px-5 py-8 text-ink shadow-[0_30px_70px_-35px_rgba(0,0,0,0.85)] [--ink:#1c1733] [--mist:#d8d1ee] [--paper:#f3effd] [--slate:#6c6786] sm:px-10 sm:py-12"
+      className="rounded-[4px] bg-paper px-5 py-8 text-ink shadow-[0_30px_70px_-35px_rgba(0,0,0,0.85)] sheet sm:px-10 sm:py-12"
     >
       <ReactMarkdown remarkPlugins={plugins} components={components}>
         {forDisplay(report, streaming)}
