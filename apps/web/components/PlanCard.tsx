@@ -95,14 +95,14 @@ export function PlanCard({
                 type="button"
                 disabled={!valid}
                 onClick={() => onApprove(rows.map((r) => r.text.trim()))}
-                className="inline-flex items-center gap-2 rounded-full bg-buoy px-6 py-2.5 font-medium text-white transition-colors hover:bg-[#e84d22] disabled:cursor-not-allowed disabled:bg-mist disabled:text-slate"
+                className="inline-flex items-center gap-2 rounded-[1px] bg-buoy px-6 py-2.5 font-medium text-white transition-colors hover:bg-[#e84d22] disabled:cursor-not-allowed disabled:bg-mist disabled:text-slate"
               >
-                Start research <span aria-hidden>→</span>
+                Start research
               </button>
               <button
                 type="button"
                 onClick={() => setEditing((e) => !e)}
-                className="rounded-full border border-ink/20 px-5 py-2.5 text-sm transition-colors hover:border-ink"
+                className="rounded-[1px] border border-ink/20 px-5 py-2.5 text-sm transition-colors hover:border-ink"
               >
                 {edit ? "Done editing" : "Edit plan"}
               </button>
@@ -110,7 +110,7 @@ export function PlanCard({
                 <button
                   type="button"
                   onClick={add}
-                  className="rounded-full border border-ink/20 px-4 py-2.5 text-sm transition-colors hover:border-ink"
+                  className="rounded-[1px] border border-ink/20 px-4 py-2.5 text-sm transition-colors hover:border-ink"
                 >
                   + Add a step
                 </button>

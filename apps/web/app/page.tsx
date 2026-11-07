@@ -108,7 +108,7 @@ export default function Home() {
           )}
         </AnimatePresence>
 
-        {inThread && (
+        {inThread && (running || r.phase === "report" || r.phase === "error") && (
           <Dock running={running} onStop={r.stop} onSubmit={r.submit} />
         )}
       </div>
