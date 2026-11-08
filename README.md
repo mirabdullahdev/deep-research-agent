@@ -184,3 +184,7 @@ Every plan and research request appends one JSON line to `apps/api/logs/usage.js
 ## Docs
 
 - [Architecture](docs/architecture.md)
+
+## License
+
+Released under the [MIT License](LICENSE).
